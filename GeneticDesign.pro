@@ -13,12 +13,14 @@ SOURCES += \
     main.cpp \
     mainwndgendesign.cpp \
     mesh.cpp \
+    meshgenerator.cpp \
     volume.cpp
 
 HEADERS += \
     facet.h \
     mainwndgendesign.h \
     mesh.h \
+    meshgenerator.h \
     volume.h
 
 FORMS += \

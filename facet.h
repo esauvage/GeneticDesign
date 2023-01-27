@@ -12,6 +12,8 @@ public:
     Facet(QVector3D *a, QVector3D *b, QVector3D *c);
     QVector3D normal() const;
     const QList<QVector3D *> &vertices() const;
+    double distanceTo(QVector3D point) const;
+    bool operator==(const Facet &f) const;
 private:
     QList<QVector3D *> _vertices;
 };
