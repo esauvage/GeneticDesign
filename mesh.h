@@ -2,18 +2,19 @@
 #define MESH_H
 
 #include <QString>
-#include <QList>
-#include "facet.h"
+#include "volume.h"
 
 class Mesh
 {
 public:
     Mesh();
     void toFile(QString filename);
+	double volume() const;
 private:
     QString _nom{"generation"};
-    QList <Facet> _facets;
     QList <QVector3D> _vertices;
+	QList <Facet> _facets;
+	QList <Volume> _volumes;
 };
 
 #endif // MESH_H

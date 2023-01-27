@@ -6,6 +6,7 @@ MainWndGenDesign::MainWndGenDesign(QWidget *parent)
     , ui(new Ui::MainWndGenDesign)
 {
     ui->setupUi(this);
+	ui->label->setText(QString("%1").arg(_mesh.volume()));
 }
 
 MainWndGenDesign::~MainWndGenDesign()

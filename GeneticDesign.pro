@@ -12,12 +12,14 @@ SOURCES += \
     facet.cpp \
     main.cpp \
     mainwndgendesign.cpp \
-    mesh.cpp
+    mesh.cpp \
+    volume.cpp
 
 HEADERS += \
     facet.h \
     mainwndgendesign.h \
-    mesh.h
+    mesh.h \
+    volume.h
 
 FORMS += \
     mainwndgendesign.ui
