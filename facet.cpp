@@ -224,27 +224,89 @@ double Facet::distanceTo(QVector3D point) const
 
 bool Facet::operator==(const Facet &f) const
 {
-    if (f.vertices().size() != _vertices.size())
-        return false;
-    for (const auto &v1 : _vertices)
-    {
-        bool found{false};
-        for (const auto &v2 : f.vertices())
-        {
-            if (*v2 == *v1)
-                found = true;
-        }
-        if (!found)
-            return false;
-    }
-    return true;
+	return false;
+	if (f.vertices().size() != _vertices.size())
+		return false;
+	for (auto &v1 : _vertices)
+	{
+		bool found{false};
+		for (auto &v2 : f.vertices())
+		{
+			if (v2 == v1)
+				found = true;
+		}
+		if (!found)
+			return false;
+	}
+	return true;
+}
+
+bool Facet::isContaining(const QVector3D &p) const
+{
+	auto u = *_vertices[0] - *_vertices[1];//dif(p1,p2);
+	auto v = *_vertices[2] - *_vertices[1];//dif(p3,p2);
+	auto w = p - *_vertices[1];//dif(p,p2);
+	auto l1 = u.dotProduct(u, w);//np.dot(u,w);
+	if (l1 < 0)
+		return false;
+	auto l2 = v.dotProduct(v,w);
+	if (l2 < 0)
+		return false;
+	u = *_vertices[0] - *_vertices[2];//dif(p1,p3);
+	v = *_vertices[1] - *_vertices[2];//dif(p2,p3);
+	w = p - *_vertices[2];//dif(p,p3);
+	l1 = u.dotProduct(u, w);//np.dot(u,w);
+	if (l1 < 0)
+		return false;
+	l2 = v.dotProduct(v,w);//np.dot(v,w);
+	if (l2 < 0)
+		return false;
+	return true;
+}
+
+double Facet::surface() const
+{
+	auto e1 = *_vertices[1] - *_vertices[0];
+	auto e2 = *_vertices[2] - *_vertices[0];
+	return e1.crossProduct(e1, e2).length()/2.;
+}
+
+bool Facet::intersect(const QVector3D &a, const QVector3D &b) const
+{
+	//p1 = [10,0,0]
+	//p2 = [0,10,0]
+	//p3 = [0,0,10]
+	//q0 = [10,13,15]
+	//w  = [1,1,1]
+	for (auto &i : _vertices)
+	{
+		if (i == &b)
+			return false;
+	}
+	auto u = *_vertices[0] - *_vertices[1];//dif(p1,p2);
+	auto v = *_vertices[2] - *_vertices[1];//dif(p3,p2);
+	auto w = b-a;
+	auto n = u.crossProduct(u, v);//n  = list(np.cross(u,v))
+	auto p0 = (*_vertices[0] + *_vertices[1] + *_vertices[2])/3.;//p0 = prod(add(add(p1,p2),p3),1/3.)
+	auto wDotn = w.dotProduct(w, n);
+	if (wDotn == 0.)
+		return false;
+	auto pi = a - w * w.dotProduct(a - p0, n)/wDotn;//add(q0,prod(w,-np.dot(dif(q0,p0),n)/np.dot(w,n)))
+	if (w.lengthSquared() > (b-pi).lengthSquared() && w.lengthSquared() > (a-pi).lengthSquared())
+		return isContaining(pi);
+	return false;
+	//if isin(pi,p1,p2,p3):
+	//    print(pi, " internal point")
+	//else:
+	//    print(pi, " external point")
+//	return true;
 }
 
 QTextStream &operator<<(QTextStream &out, const Facet &facet)
 {
     out << "\tfacet normal " << facet.normal() << Qt::endl;
     out << "\t\touter loop" << Qt::endl;
-    for (const auto &x : facet.vertices())
+	for (auto &x : facet.vertices())
     {
         out << "\t\t\tvertex " << (*x) <<Qt::endl;
     }

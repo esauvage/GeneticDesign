@@ -8,16 +8,28 @@ class Mesh
 {
 public:
     Mesh();
+	Mesh(const Mesh &m);
+	virtual ~Mesh();
     void toFile(QString filename);
 	double volume() const;
+	double surface() const;
     bool isIncluding(const QVector3D &p) const;
-    const Facet &nearestFacet(QVector3D p) const;
+	Facet *nearestFacet(const QVector3D *p) const;
     void addVolume(Volume &v);
+
+	const QString &nom() const;
+
+	const QList<QVector3D *> &vertices() const;
+
+	const QList<Facet *> &facets() const;
+
+	const QList<Volume *> &volumes() const;
+
 private:
     QString _nom{"generation"};
-    QList <QVector3D> _vertices;
-	QList <Facet> _facets;
-	QList <Volume> _volumes;
+	QList <QVector3D *> _vertices;
+	QList <Facet *> _facets;
+	QList <Volume *> _volumes;
 };
 
 #endif // MESH_H

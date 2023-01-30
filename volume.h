@@ -8,14 +8,14 @@
 class Volume
 {
 public:
-    Volume(const Facet *a, const Facet *b, const Facet *c, const Facet *d);
+	Volume(Facet *a, Facet *b, Facet *c, Facet *d);
 	double volume() const;
     bool isIncluding(const QVector3D &p) const;
     QSet <QVector3D *> vertices() const;
-    const QList<const Facet *> &facets() const;
+	const QList<Facet *> &facets() const;
 
 private:
-    QList<const Facet *>_facets;
+	QList<Facet *>_facets;
 };
 
 #endif // VOLUME_H

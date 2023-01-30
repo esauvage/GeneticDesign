@@ -18,6 +18,6 @@ public:
 
 private:
     Ui::MainWndGenDesign *ui;
-    Mesh _mesh;
+	QList <Mesh> _mesh;
 };
 #endif // MAINWNDGENDESIGN_H

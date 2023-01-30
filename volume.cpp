@@ -1,6 +1,6 @@
 #include "volume.h"
 
-Volume::Volume(const Facet *a, const Facet *b, const Facet *c, const Facet *d)
+Volume::Volume(Facet *a, Facet *b, Facet *c, Facet *d)
 {
 	_facets << a << b << c << d;
 }
@@ -124,15 +124,15 @@ QSet<QVector3D *> Volume::vertices() const
     QSet<QVector3D *> r;
     for (const auto & f: _facets)
     {
-        for (const auto & v: f->vertices())
-        {
-            r << v;
-        }
-    }
+		for (auto & v: f->vertices())
+		{
+			r << v;
+		}
+	}
     return r;
 }
 
-const QList<const Facet *> &Volume::facets() const
+const QList<Facet *> &Volume::facets() const
 {
     return _facets;
 }
