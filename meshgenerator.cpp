@@ -8,7 +8,7 @@ MeshGenerator::MeshGenerator()
 Mesh *MeshGenerator::genere()
 {
 	Mesh *m = new Mesh();
-	for (auto i = 0; i < 300; ++i)
+    for (auto i = 0; i < 10; ++i)
 	{
 		QVector3D * point = nullptr;
 		for (;!point || m->isIncluding(*point); point = new QVector3D(rand() * 5. / (double)RAND_MAX-2.5,

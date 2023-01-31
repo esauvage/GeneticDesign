@@ -14,27 +14,40 @@ MainWndGenDesign::MainWndGenDesign(QWidget *parent)
 //    ok = _mesh.isIncluding(QVector3D(0., 0., 0.));
 //    ok = _mesh.isIncluding(QVector3D(1, 1, 1));
 //    ok = !ok;
-	QMap<double, Mesh *> _population;
-	for (auto i = 0; i < 50; ++i) {
-		_mesh << MeshGenerator::genere();
-		ui->lstMeshes->addItem(QString("\n%1\t%2\t%3").arg(_mesh.last()->volume()).arg(_mesh.last()->surface())
-						   .arg(_mesh.last()->surface()/_mesh.last()->volume()));
-		_population[_mesh.last()->surface()/_mesh.last()->volume()] = _mesh.last();
+    QMultiMap<double, Mesh *> _population;
+    for (auto i = 0; i < 20; ++i) {
+        Mesh * m = MeshGenerator::genere();
+//		ui->lstMeshes->addItem(QString("\n%1\t%2\t%3").arg(_mesh.last()->volume()).arg(_mesh.last()->surface())
+//						   .arg(_mesh.last()->surface()/_mesh.last()->volume()));
+        _population.insert(m->surface(), m);
 	}
-	ui->lstMeshes->clear();
-	QList <Mesh *> _newPop;
-	for (auto i = 0; i < 50; ++i)
-	{
-		auto j = _population.keys().at(i%10);
-		_newPop << new Mesh(*_population[j]);
-		if (i >= 10)
-		{
-			MeshEvolver::evolve(_newPop.last());
-		}
-		ui->lstMeshes->addItem(QString("\n%1\t%2\t%3").arg(_newPop.last()->volume()).arg(_newPop.last()->surface())
-						   .arg(_newPop.last()->surface()/_newPop.last()->volume()));
-	}
-	_mesh = _newPop;
+    for (int k = 0; k < 10; k++)
+    {
+        ui->lstMeshes->clear();
+        QMultiMap <double, Mesh *> _newPop;
+        for (auto i = 0; i < _population.size(); ++i)
+        {
+            auto j = _population.keys().at(i%10);
+            auto l = rand()%_population.values(j).size();
+            Mesh * m = new Mesh(*_population.values(j).at(l));
+            if (i == 10)
+            {
+                MeshEvolver::evolve(m);
+            }
+            _newPop.insert(m->surface(), m);
+        }
+        _population = _newPop;
+        QList <double> r;
+        for (auto &m : _population)
+        {
+            r << m->surface();
+        }
+    }
+    for (auto m : _population.values())
+    {
+        ui->lstMeshes->addItem(QString("\n%1\t%2\t%3").arg(m->volume()).arg(m->surface())
+                       .arg(m->surface()/m->volume()));
+    }
 }
 
 MainWndGenDesign::~MainWndGenDesign()

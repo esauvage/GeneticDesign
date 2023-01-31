@@ -13,7 +13,7 @@ public:
     bool isIncluding(const QVector3D &p) const;
     QSet <QVector3D *> vertices() const;
 	const QList<Facet *> &facets() const;
-
+    void setFacet(int i, Facet *f);
 private:
 	QList<Facet *>_facets;
 };

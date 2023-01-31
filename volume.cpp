@@ -136,3 +136,8 @@ const QList<Facet *> &Volume::facets() const
 {
     return _facets;
 }
+
+void Volume::setFacet(int i, Facet *f)
+{
+    _facets[i] = f;
+}

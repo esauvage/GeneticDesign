@@ -74,7 +74,7 @@ double Mesh::surface() const
 	for (auto &f : _facets)
 	{
 		auto nbVolumes = 0;
-		auto facetteNoyee = false;
+//		auto facetteNoyee = false;
 		for (auto & v : _volumes)
 		{
 			if (v->facets().contains(f))
@@ -82,12 +82,12 @@ double Mesh::surface() const
 				nbVolumes ++;
 				if (nbVolumes > 1)
 				{
-					facetteNoyee = true;
+//					facetteNoyee = true;
 					break;
 				}
 			}
 		}
-		if (facetteNoyee)
+        if (nbVolumes > 1)
 			continue;
 		s += f->surface();
 	}
@@ -222,15 +222,23 @@ const QList<Volume *> &Mesh::volumes() const
 
 void Mesh::setVertice(int i, QVector3D *v)
 {
-	for (auto &f: _facets)
+    for (auto fIndex = 0; fIndex < _facets.size(); ++fIndex)
 	{
-		for (auto j = 0; j < f->vertices().size(); ++j)
-		{
-			if (f->vertices()[j] == _vertices[i])
-			{
-				f->setVertice(j, v);
-			}
-		}
-	}
+        auto &f = _facets[fIndex];
+        if (!f->vertices().contains(_vertices[i]))
+            continue;
+        auto j = f->vertices().indexOf(_vertices[i]);
+        Facet * newFacet = new Facet(f->vertices()[0], f->vertices()[1], f->vertices()[2]);
+        newFacet->setVertice(j, v);
+        for (auto vIndex = 0; vIndex < _volumes.size(); ++vIndex)
+        {
+            auto v = _volumes[vIndex];
+            if (!v->facets().contains(f))
+                continue;
+            j = v->facets().indexOf(f);
+            v->setFacet(j, newFacet);
+        }
+        _facets[fIndex] = newFacet;
+    }
 	_vertices[i] = v;
 }
