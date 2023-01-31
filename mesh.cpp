@@ -38,15 +38,6 @@ Mesh::Mesh()
 	_volumes << new Volume(_facets[0], _facets[1], _facets[2], _facets[3]);
 }
 
-Mesh::Mesh(const Mesh &m)
-	:_nom(m.nom()),
-	  _vertices(m.vertices()),
-	  _facets(m.facets()),
-	  _volumes(m.volumes())
-{
-
-}
-
 Mesh::~Mesh()
 {
 //	qDeleteAll(_volumes);
@@ -227,4 +218,19 @@ const QList<Facet *> &Mesh::facets() const
 const QList<Volume *> &Mesh::volumes() const
 {
 	return _volumes;
+}
+
+void Mesh::setVertice(int i, QVector3D *v)
+{
+	for (auto &f: _facets)
+	{
+		for (auto j = 0; j < f->vertices().size(); ++j)
+		{
+			if (f->vertices()[j] == _vertices[i])
+			{
+				f->setVertice(j, v);
+			}
+		}
+	}
+	_vertices[i] = v;
 }

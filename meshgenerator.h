@@ -7,7 +7,7 @@ class MeshGenerator
 {
 public:
     MeshGenerator();
-    static Mesh genere();
+	static Mesh *genere();
 };
 
 #endif // MESHGENERATOR_H

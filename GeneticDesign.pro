@@ -13,6 +13,7 @@ SOURCES += \
     main.cpp \
     mainwndgendesign.cpp \
     mesh.cpp \
+    meshevolver.cpp \
     meshgenerator.cpp \
     volume.cpp
 
@@ -20,6 +21,7 @@ HEADERS += \
     facet.h \
     mainwndgendesign.h \
     mesh.h \
+    meshevolver.h \
     meshgenerator.h \
     volume.h
 

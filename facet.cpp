@@ -271,6 +271,11 @@ double Facet::surface() const
 	return e1.crossProduct(e1, e2).length()/2.;
 }
 
+void Facet::setVertice(int i, QVector3D *v)
+{
+	_vertices[i] = v;
+}
+
 bool Facet::intersect(const QVector3D &a, const QVector3D &b) const
 {
 	//p1 = [10,0,0]

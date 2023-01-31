@@ -17,6 +17,7 @@ public:
 	bool intersect(const QVector3D &a, const QVector3D &b) const;
 	bool isContaining(const QVector3D &p) const;
 	double surface() const;
+	void setVertice(int i, QVector3D *v);
 private:
     QList<QVector3D *> _vertices;
 };

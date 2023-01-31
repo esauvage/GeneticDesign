@@ -8,7 +8,6 @@ class Mesh
 {
 public:
     Mesh();
-	Mesh(const Mesh &m);
 	virtual ~Mesh();
     void toFile(QString filename);
 	double volume() const;
@@ -24,7 +23,7 @@ public:
 	const QList<Facet *> &facets() const;
 
 	const QList<Volume *> &volumes() const;
-
+	void setVertice(int i, QVector3D *v);
 private:
     QString _nom{"generation"};
 	QList <QVector3D *> _vertices;
