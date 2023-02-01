@@ -2,6 +2,7 @@
 #define MAINWNDGENDESIGN_H
 
 #include <QMainWindow>
+#include <QMultiMap>
 #include "mesh.h"
 
 QT_BEGIN_NAMESPACE
@@ -18,6 +19,6 @@ public:
 
 private:
     Ui::MainWndGenDesign *ui;
-	QList <Mesh *> _mesh;
+	QMultiMap<double, Mesh *> _population;
 };
 #endif // MAINWNDGENDESIGN_H

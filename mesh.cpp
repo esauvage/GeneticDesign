@@ -5,44 +5,44 @@
 
 Mesh::Mesh()
 {
-	_vertices << new QVector3D(0, 0, 0);//0
-	_vertices << new QVector3D(0, 1, 0);//1
-	_vertices << new QVector3D(1, 1, 0);//2
-	_vertices << new QVector3D(1, 0, 0);//3
-	_vertices << new QVector3D(0, 0, 1);//4
-//	_vertices.append(QVector3D(0, 1, 1));//5
-//	_vertices.append(QVector3D(1, 1, 1));//6
-//	_vertices.append(QVector3D(1, 0, 1));//7
-	_facets << new Facet(_vertices[0], _vertices[1], _vertices[2]);
-	_facets << new Facet(_vertices[0], _vertices[2], _vertices[4]);
-	_facets << new Facet(_vertices[1], _vertices[0], _vertices[4]);
-	_facets << new Facet(_vertices[2], _vertices[1], _vertices[4]);
-//    //Bottom
-//	_facets.append(Facet(&_vertices[0], &_vertices[1], &_vertices[2]));
-//	_facets.append(Facet(&_vertices[0], &_vertices[2], &_vertices[3]));
-//    //Top
-//	_facets.append(Facet(&_vertices[7], &_vertices[5], &_vertices[6]));
-//	_facets.append(Facet(&_vertices[4], &_vertices[5], &_vertices[7]));
+//	_vertices << new QVector3D(0, 0, 0);//0
+//	_vertices << new QVector3D(0, 1, 0);//1
+//	_vertices << new QVector3D(1, 1, 0);//2
+//	_vertices << new QVector3D(1, 0, 0);//3
+//	_vertices << new QVector3D(0, 0, 1);//4
+//	_facets << new Facet(_vertices[0], _vertices[1], _vertices[2]);
+//	_facets << new Facet(_vertices[0], _vertices[2], _vertices[4]);
+//	_facets << new Facet(_vertices[1], _vertices[0], _vertices[4]);
+//	_facets << new Facet(_vertices[2], _vertices[1], _vertices[4]);
+//	_volumes << new Volume(_facets[0], _facets[1], _facets[2], _facets[3]);
+}
 
-//	_facets.append(Facet(&_vertices[0], &_vertices[5], &_vertices[1]));
-//	_facets.append(Facet(&_vertices[0], &_vertices[5], &_vertices[4]));
-
-//	_facets.append(Facet(&_vertices[0], &_vertices[3], &_vertices[7]));
-//	_facets.append(Facet(&_vertices[4], &_vertices[7], &_vertices[0]));
-
-//	_facets.append(Facet(&_vertices[1], &_vertices[2], &_vertices[5]));
-//	_facets.append(Facet(&_vertices[2], &_vertices[6], &_vertices[5]));
-
-//	_facets.append(Facet(&_vertices[6], &_vertices[2], &_vertices[7]));
-//	_facets.append(Facet(&_vertices[7], &_vertices[3], &_vertices[2]));
-	_volumes << new Volume(_facets[0], _facets[1], _facets[2], _facets[3]);
+Mesh::Mesh(const Mesh &m)
+{
+	for (auto & v: m.vertices())
+	{
+		_vertices << new QVector3D(v->x(), v->y(), v->z());
+	}
+	for (auto & f: m.facets())
+	{
+		_facets << new Facet(_vertices[m.vertices().indexOf(f->vertices()[0])],
+				_vertices[m.vertices().indexOf(f->vertices()[1])],
+				_vertices[m.vertices().indexOf(f->vertices()[2])]);
+	}
+	for (auto &v: m.volumes())
+	{
+		_volumes << new Volume(_facets[m.facets().indexOf(v->facets()[0])],
+				_facets[m.facets().indexOf(v->facets()[1])],
+				_facets[m.facets().indexOf(v->facets()[2])],
+				_facets[m.facets().indexOf(v->facets()[3])]);
+	}
 }
 
 Mesh::~Mesh()
 {
-//	qDeleteAll(_volumes);
-//	qDeleteAll(_facets);
-//	qDeleteAll(_vertices);
+	qDeleteAll(_volumes);
+	qDeleteAll(_facets);
+	qDeleteAll(_vertices);
 }
 
 void Mesh::toFile(QString filename)
@@ -87,11 +87,25 @@ double Mesh::surface() const
 				}
 			}
 		}
-        if (nbVolumes > 1)
+		if (nbVolumes != 1)
 			continue;
 		s += f->surface();
 	}
 	return s;
+}
+
+double Mesh::longueurMax() const
+{
+	double max = 0;
+	for (auto &v1 : _vertices)
+	{
+		for (auto &v2 : _vertices)
+		{
+			if (v2==v1) continue;
+			max = qMax(max, (*v2-*v1).lengthSquared());
+		}
+	}
+	return max;
 }
 
 bool Mesh::isIncluding(const QVector3D &p) const
@@ -185,17 +199,11 @@ void Mesh::addVolume(Volume &v)
     QList<Facet *> nFs;
 	for (auto & f : v.facets())
     {
-//		Facet *nF = new Facet(&_vertices[_vertices.indexOf(*(f->vertices()[0]))], &_vertices[_vertices.indexOf(*(f->vertices()[1]))], &_vertices[_vertices.indexOf(*(f->vertices()[2]))]);
 		if (!_facets.contains(f))
         {
 			_facets << f;
-//			nFs << _facets.last();
         }
-//		else
-//		{
-			nFs << f;//_facets[_facets.indexOf(f)];
-//			delete nF;
-//		}
+		nFs << f;
     }
 	_volumes << new Volume(nFs[0], nFs[1], nFs[2], nFs[3]);
 }
@@ -222,23 +230,27 @@ const QList<Volume *> &Mesh::volumes() const
 
 void Mesh::setVertice(int i, QVector3D *v)
 {
-    for (auto fIndex = 0; fIndex < _facets.size(); ++fIndex)
-	{
-        auto &f = _facets[fIndex];
-        if (!f->vertices().contains(_vertices[i]))
-            continue;
-        auto j = f->vertices().indexOf(_vertices[i]);
-        Facet * newFacet = new Facet(f->vertices()[0], f->vertices()[1], f->vertices()[2]);
-        newFacet->setVertice(j, v);
-        for (auto vIndex = 0; vIndex < _volumes.size(); ++vIndex)
-        {
-            auto v = _volumes[vIndex];
-            if (!v->facets().contains(f))
-                continue;
-            j = v->facets().indexOf(f);
-            v->setFacet(j, newFacet);
-        }
-        _facets[fIndex] = newFacet;
-    }
-	_vertices[i] = v;
+	_vertices[i]->setX(v->x());
+	_vertices[i]->setY(v->y());
+	_vertices[i]->setZ(v->z());
+
+//    for (auto fIndex = 0; fIndex < _facets.size(); ++fIndex)
+//	{
+//        auto &f = _facets[fIndex];
+//        if (!f->vertices().contains(_vertices[i]))
+//            continue;
+//		auto j = f->vertices().indexOf(_vertices[i]);
+//		Facet * newFacet = new Facet(f->vertices()[0], f->vertices()[1], f->vertices()[2]);
+////		newFacet->setVertice(j, v);
+////		for (auto vIndex = 0; vIndex < _volumes.size(); ++vIndex)
+////		{
+////			auto v = _volumes[vIndex];
+////			if (!v->facets().contains(f))
+////				continue;
+////			j = v->facets().indexOf(f);
+////			v->setFacet(j, newFacet);
+////		}
+//		_facets[fIndex] = newFacet;
+//    }
+//	_vertices[i] = v;
 }

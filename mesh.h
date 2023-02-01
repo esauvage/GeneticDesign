@@ -8,10 +8,12 @@ class Mesh
 {
 public:
     Mesh();
+	Mesh(const Mesh &m);
 	virtual ~Mesh();
     void toFile(QString filename);
 	double volume() const;
 	double surface() const;
+	double longueurMax() const;
     bool isIncluding(const QVector3D &p) const;
 	Facet *nearestFacet(const QVector3D *p) const;
     void addVolume(Volume &v);

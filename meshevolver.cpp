@@ -15,12 +15,13 @@ void MeshEvolver::evolve(Mesh *m)
 		auto j = rand()%m->vertices().size();
         QVector3D *ref = m->vertices()[j];
         QVector3D *p = new QVector3D(*ref);
-//		do {
-//		*p+= QVector3D(rand()/(double)RAND_MAX - 0.5,
-//					rand()/(double)RAND_MAX - 0.5,
-//					rand()/(double)RAND_MAX - 0.5);
-//		}while (m->isIncluding(*p));
-        m->setVertice(j, p);
+		do {
+		*p+= QVector3D(rand()/(double)RAND_MAX - 0.5,
+					rand()/(double)RAND_MAX - 0.5,
+					rand()/(double)RAND_MAX - 0.5);
+		}while (m->isIncluding(*p));
+		m->setVertice(j, p);
+		delete p;
         bool error = false;
         if (m->vertices().contains(ref))
             error = true;
