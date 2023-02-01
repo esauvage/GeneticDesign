@@ -1,5 +1,7 @@
 #include "volume.h"
 
+#include <QGenericMatrix>
+
 Volume::Volume(Facet *a, Facet *b, Facet *c, Facet *d)
 {
 	_facets << a << b << c << d;
@@ -140,4 +142,35 @@ const QList<Facet *> &Volume::facets() const
 void Volume::setFacet(int i, Facet *f)
 {
     _facets[i] = f;
+}
+
+bool Volume::isIntersecting(Volume *v)
+{
+    QList <QVector3D> pointsY;
+    for (auto &x : vertices())
+    {
+        pointsY << *x;
+    }
+    QList <QVector3D> pointsV;
+    for (auto &x : v->vertices())
+    {
+        pointsV << *x;
+    }
+    //On considère que ce tétraèdre est aligné avec les axes de R3
+    //On va transformer v pour être défini dans cette transformation
+    //D'abord on translate tout au point d'origine
+    for (int i = 0; i < 4; ++i)
+    {
+        pointsV[i] -= pointsY[0];
+        pointsY[i] -= pointsY[0];
+    }
+    QMatrix3x3 m;
+    for (int i = 0; i < 3; ++i)
+    {
+        for (int j = 0; j < 3; ++j)
+        {
+            m(i, j) = pointsY[i+1][j];
+        }
+    }
+    return false;
 }

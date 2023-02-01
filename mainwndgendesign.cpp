@@ -22,7 +22,8 @@ MainWndGenDesign::MainWndGenDesign(QWidget *parent)
 		l = l>1 ? l : 1/l;
 		_population.insert(m->surface()/m->volume() * l, m);
 	}
-	for (int k = 0; k < 0;k++)//500; k++)
+    auto nbGenerations = 1;
+    for (int k = 0; k < nbGenerations; k++)
     {
         QMultiMap <double, Mesh *> _newPop;
         for (auto i = 0; i < _population.size(); ++i)

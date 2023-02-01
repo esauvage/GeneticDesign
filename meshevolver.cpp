@@ -10,7 +10,7 @@ MeshEvolver::MeshEvolver()
 void MeshEvolver::evolve(Mesh *m)
 {
 //    srand(time(NULL));
-    for (int i = 0; i < 1; ++i)
+    for (int i = rand()%m->vertices().size()*5; i < m->vertices().size(); i = rand()%m->vertices().size()*5)
 	{
 		auto j = rand()%m->vertices().size();
         QVector3D *ref = m->vertices()[j];
@@ -22,23 +22,5 @@ void MeshEvolver::evolve(Mesh *m)
 		}while (m->isIncluding(*p));
 		m->setVertice(j, p);
 		delete p;
-        bool error = false;
-        if (m->vertices().contains(ref))
-            error = true;
-        for (auto &f : m->facets())
-        {
-            if (f->vertices().contains(ref))
-                error = true;
-        }
-        for (auto &v : m->volumes())
-        {
-            for (auto &f : v->facets())
-            {
-                if (f->vertices().contains(ref))
-                    error = true;
-            }
-        }
-        if (error)
-            qDebug() << "MegaErreur";
 	}
 }

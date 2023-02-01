@@ -14,6 +14,7 @@ public:
     QSet <QVector3D *> vertices() const;
 	const QList<Facet *> &facets() const;
     void setFacet(int i, Facet *f);
+    bool isIntersecting(Volume *v);
 private:
 	QList<Facet *>_facets;
 };

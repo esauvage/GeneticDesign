@@ -9,7 +9,9 @@ Facet::Facet(QVector3D *a, QVector3D *b, QVector3D *c)
 
 QVector3D Facet::normal() const
 {
-    return QVector3D(0., 0., -1.);
+    auto e1 = *_vertices[1] - *_vertices[0];
+    auto e2 = *_vertices[2] - *_vertices[0];
+    return e1.crossProduct(e1, e2);
 }
 
 const QList<QVector3D *> &Facet::vertices() const
@@ -276,35 +278,35 @@ void Facet::setVertice(int i, QVector3D *v)
 	_vertices[i] = v;
 }
 
-bool Facet::intersect(const QVector3D &a, const QVector3D &b) const
+bool Facet::intersect(const QVector3D *a, const QVector3D *b) const
 {
 	//p1 = [10,0,0]
 	//p2 = [0,10,0]
 	//p3 = [0,0,10]
 	//q0 = [10,13,15]
 	//w  = [1,1,1]
-	for (auto &i : _vertices)
-	{
-		if (i == &b)
-			return false;
-	}
+    if (_vertices.contains(b))
+    {
+        return false;
+    }
 	auto u = *_vertices[0] - *_vertices[1];//dif(p1,p2);
 	auto v = *_vertices[2] - *_vertices[1];//dif(p3,p2);
-	auto w = b-a;
+//    auto w = (*b - *a).normalized();
 	auto n = u.crossProduct(u, v);//n  = list(np.cross(u,v))
-	auto p0 = (*_vertices[0] + *_vertices[1] + *_vertices[2])/3.;//p0 = prod(add(add(p1,p2),p3),1/3.)
-	auto wDotn = w.dotProduct(w, n);
-	if (wDotn == 0.)
-		return false;
-	auto pi = a - w * w.dotProduct(a - p0, n)/wDotn;//add(q0,prod(w,-np.dot(dif(q0,p0),n)/np.dot(w,n)))
-	if (w.lengthSquared() > (b-pi).lengthSquared() && w.lengthSquared() > (a-pi).lengthSquared())
-		return isContaining(pi);
-	return false;
-	//if isin(pi,p1,p2,p3):
-	//    print(pi, " internal point")
-	//else:
-	//    print(pi, " external point")
-//	return true;
+    return (n.dotProduct(n, *a) * n.dotProduct(n, *b) <= 0);
+//    auto p0 = *_vertices[0] - *a;//(*_vertices[0] + *_vertices[1] + *_vertices[2])/3.;//p0 = prod(add(add(p1,p2),p3),1/3.)
+//	auto wDotn = w.dotProduct(w, n);
+//	if (wDotn == 0.)
+//		return false;
+//    auto pi = *a + w * p0.dotProduct(p0, n)/wDotn;//  * - w * w.dotProduct(a - p0, n)/wDotn;//add(q0,prod(w,-np.dot(dif(q0,p0),n)/np.dot(w,n)))
+//    if (w.lengthSquared() > (*b-pi).lengthSquared() && w.lengthSquared() > (*a-pi).lengthSquared())
+//		return isContaining(pi);
+//	return false;
+//	//if isin(pi,p1,p2,p3):
+//	//    print(pi, " internal point")
+//	//else:
+//	//    print(pi, " external point")
+////	return true;
 }
 
 QTextStream &operator<<(QTextStream &out, const Facet &facet)

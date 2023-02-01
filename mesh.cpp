@@ -125,66 +125,113 @@ Facet *Mesh::nearestFacet(const QVector3D *p) const
     auto d = -1.;
     auto i = -1;
     auto j = 0;
-	for (auto &f : _facets)
+    auto curVol = _volumes.last();
+    for (auto &f : curVol->facets())
     {
-		auto noDist = false;
-		auto nbVolumes = 0;
-		for (auto &v : _volumes)
-		{
-			if (v->facets().contains(f))
-			{
-				nbVolumes ++;
-				if (nbVolumes > 1)
-				{
-					noDist = true;
-					break;
-				}
-			}
-		}
-		if (noDist)
-		{
-			++j;
-			continue;
-		}
-		if (i < 0)
+        //On exclut les facettes internes du volume
+        auto nbVolumes = 0;
+        for (auto &v : _volumes)
         {
-			//On teste si on intersecte chaque future arête avec une facette
-			for (auto &f2 : _facets)
+            if (v->facets().contains(f))
             {
-				if (f == f2)
-					continue;
-				for (auto &v : f->vertices())
+                nbVolumes ++;
+                if (nbVolumes > 1)
                 {
-//                    auto line = p - *v;
-					if (f2->intersect(*p, *v))
-                    {
-                        noDist = true;
-                    }
+                    break;
                 }
             }
-			if (noDist)
-			{
-				++j;
-				continue;
-			}
-			auto n = f->distanceTo(*p);
-			d = n;
-            i = j;
         }
-        else
+        if (nbVolumes != 1)
         {
-			auto n = f->distanceTo(*p);
-            if (n < d)
+            ++j;
+            continue;
+        }
+        //On cherche le point du tétraèdre qui n'est pas sur la facette
+        QVector3D lastPoint;
+        for (auto x : curVol->vertices())
+        {
+            if (!f->vertices().contains(x))
             {
-                d = n;
-                i = j;
+                lastPoint = *x;
+                break;
             }
         }
-        ++j;
+        QVector3D n = f->normal().normalized();
+        lastPoint -= *f->vertices()[0];
+        auto coteLast = n.dotProduct(n, lastPoint.normalized());
+        auto coteNouveau = n.dotProduct(n, (*p - *f->vertices()[0]).normalized());
+        if ((coteLast * coteNouveau) >= 0)
+        {
+            continue;
+        }
+        lastPoint = *p - *f->vertices()[0];
+        d = n.dotProduct(n, lastPoint);
+        if (f->isContaining(lastPoint - n*d))
+            return f;
     }
-	if (i < 0)
-		return nullptr;
-    return _facets[i];
+    return nullptr;
+//	for (auto &f : _facets)
+//    {
+//		auto noDist = false;
+//		auto nbVolumes = 0;
+//		for (auto &v : _volumes)
+//		{
+//			if (v->facets().contains(f))
+//			{
+//				nbVolumes ++;
+//				if (nbVolumes > 1)
+//				{
+//					break;
+//				}
+//			}
+//		}
+//        if (nbVolumes != 1)
+//		{
+//			++j;
+//			continue;
+//		}
+//		if (i < 0)
+//        {
+//            //On teste si on intersecte chaque future arête avec une facette
+//            for (auto &f2 : _facets)
+//            {
+//				if (f == f2)
+//					continue;
+//				for (auto &v : f->vertices())
+//                {
+////                    auto line = p - *v;
+//                    if (f2->intersect(p, v))
+//                    {
+//                        noDist = true;
+//                        break;
+//                    }
+//                }
+//                if (noDist)
+//                    break;
+//            }
+//			if (noDist)
+//			{
+//				++j;
+//				continue;
+//			}
+//			auto n = f->distanceTo(*p);
+//			d = n;
+//            i = j;
+//        }
+//        else
+//        {
+//			auto n = f->distanceTo(*p);
+//            if (n < d)
+//            {
+//                d = n;
+//                i = j;
+//            }
+//        }
+//        ++j;
+//    }
+//	if (i < 0)
+//		return nullptr;
+//    return _facets[i];
 }
 
 void Mesh::addVolume(Volume &v)
