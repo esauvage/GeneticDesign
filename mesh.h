@@ -17,6 +17,8 @@ public:
     bool isIncluding(const QVector3D &p) const;
 	Facet *nearestFacet(const QVector3D *p) const;
     void addVolume(Volume &v);
+	void diviseVolume(Volume * v);
+	QList<Facet *>facettesExternes() const;
 
 	const QString &nom() const;
 

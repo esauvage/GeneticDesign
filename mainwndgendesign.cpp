@@ -14,7 +14,7 @@ MainWndGenDesign::MainWndGenDesign(QWidget *parent)
 //    ok = _mesh.isIncluding(QVector3D(0., 0., 0.));
 //    ok = _mesh.isIncluding(QVector3D(1, 1, 1));
 //    ok = !ok;
-	for (auto i = 0; i < 200; ++i) {
+	for (auto i = 0; i < 500; ++i) {
         Mesh * m = MeshGenerator::genere();
 //		ui->lstMeshes->addItem(QString("\n%1\t%2\t%3").arg(_mesh.last()->volume()).arg(_mesh.last()->surface())
 //						   .arg(_mesh.last()->surface()/_mesh.last()->volume()));
@@ -22,7 +22,7 @@ MainWndGenDesign::MainWndGenDesign(QWidget *parent)
 		l = l>1 ? l : 1/l;
 		_population.insert(m->surface()/m->volume() * l, m);
 	}
-    auto nbGenerations = 1;
+	auto nbGenerations = 500;
     for (int k = 0; k < nbGenerations; k++)
     {
         QMultiMap <double, Mesh *> _newPop;

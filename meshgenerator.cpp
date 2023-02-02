@@ -31,20 +31,23 @@ Mesh *MeshGenerator::genere()
         for (;!point || m->isIncluding(*point); )
 		{
             if (point) delete point;
-            point = new QVector3D(rand() / (double)RAND_MAX-0.5,
-                                  rand() / (double)RAND_MAX-0.5,
-                                  rand() / (double)RAND_MAX-0.5);
+			point = new QVector3D(rand()*0.2 / (double)RAND_MAX-0.1,
+								  rand()*0.2 / (double)RAND_MAX-0.1,
+								  rand()*0.2 / (double)RAND_MAX-0.1);
             *point += *m->vertices().last();
         }
 		Facet *f = m->nearestFacet(point);
 		if (!f)
 		{
 			i --;
- //           m->nearestFacet(point);
+			m->nearestFacet(point);
 			delete point;
             nbFautes++;
             if (nbFautes > 10)
+			{
+				m->diviseVolume(m->volumes().last());
                 break;
+			}
             continue;
 		}
         nbFautes = 0;

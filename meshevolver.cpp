@@ -10,7 +10,7 @@ MeshEvolver::MeshEvolver()
 void MeshEvolver::evolve(Mesh *m)
 {
 //    srand(time(NULL));
-    for (int i = rand()%m->vertices().size()*5; i < m->vertices().size(); i = rand()%m->vertices().size()*5)
+	for (int i = 0; i < m->vertices().size()*0.2; i += 1)
 	{
 		auto j = rand()%m->vertices().size();
         QVector3D *ref = m->vertices()[j];

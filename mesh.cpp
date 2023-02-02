@@ -71,7 +71,7 @@ double Mesh::volume() const
 double Mesh::surface() const
 {
 	double s = 0;
-	for (auto &f : _facets)
+	for (auto &f : facettesExternes())
 	{
 		auto nbVolumes = 0;
 //		auto facetteNoyee = false;
@@ -123,7 +123,7 @@ bool Mesh::isIncluding(const QVector3D &p) const
 Facet *Mesh::nearestFacet(const QVector3D *p) const
 {
     auto d = -1.;
-    auto i = -1;
+	Facet *r = nullptr;
     auto j = 0;
     auto curVol = _volumes.last();
     for (auto &f : curVol->facets())
@@ -158,18 +158,24 @@ Facet *Mesh::nearestFacet(const QVector3D *p) const
         }
         QVector3D n = f->normal().normalized();
         lastPoint -= *f->vertices()[0];
-        auto coteLast = n.dotProduct(n, lastPoint.normalized());
-        auto coteNouveau = n.dotProduct(n, (*p - *f->vertices()[0]).normalized());
+		auto coteLast = n.dotProduct(n, lastPoint);
+		auto coteNouveau = n.dotProduct(n, (*p - *f->vertices()[0]));
         if ((coteLast * coteNouveau) >= 0)
         {
             continue;
         }
         lastPoint = *p - *f->vertices()[0];
-        d = n.dotProduct(n, lastPoint);
-        if (f->isContaining(lastPoint - n*d))
-            return f;
+		auto dist = n.dotProduct(n, lastPoint);
+		if (f->isContaining(lastPoint - n*dist) || f->isContaining(lastPoint + n*dist))
+		{
+			if ((d < 0) || (dist < d))
+			{
+				d = dist;
+				r = f;
+			}
+		}
     }
-    return nullptr;
+	return r;
 //	for (auto &f : _facets)
 //    {
 //		auto noDist = false;
@@ -253,6 +259,63 @@ void Mesh::addVolume(Volume &v)
 		nFs << f;
     }
 	_volumes << new Volume(nFs[0], nFs[1], nFs[2], nFs[3]);
+}
+
+void Mesh::diviseVolume(Volume *v)
+{
+	QList<Facet *>facets = v->facets();
+	QList<QVector3D *> points;
+	for (auto & f : facets)
+	{
+		for (auto & v : f->vertices())
+		{
+			if (!points.contains(v))
+			{
+				points << v;
+			}
+		}
+	}
+	QList <QVector3D *> newPoints;
+	QList <Facet *> newFacets;
+	QList <Facet *> volumeInterne;
+	for (auto & p : points)
+	{
+		for (auto & p2 : points)
+		{
+			if (p == p2)
+				continue;
+			newPoints << new QVector3D((*p + *p2)/2);
+		}
+		newFacets << new Facet(p, newPoints[0], newPoints[1]);
+		newFacets << new Facet(p, newPoints[1], newPoints[2]);
+		newFacets << new Facet(p, newPoints[2], newPoints[0]);
+		newFacets << new Facet(newPoints[0], newPoints[1], newPoints[2]);
+		volumeInterne << newFacets.last();
+		_volumes << new Volume(newFacets[0], newFacets[1], newFacets[2], newFacets[3]);
+//		_points
+		_facets << newFacets;
+	}
+	_volumes << new Volume(volumeInterne[0], volumeInterne[1], volumeInterne[2], volumeInterne[3]);
+}
+
+QList<Facet *> Mesh::facettesExternes() const
+{
+	QList <Facet *>r;
+	for (auto &v : _volumes)
+	{
+		for (Facet *f : v->facets())
+		{
+			if (r.contains(f))
+			{
+				r.remove(r.indexOf(f));
+			}
+			else
+			{
+				r << f;
+			}
+		}
+	}
+	return r;
 }
 
 const QString &Mesh::nom() const
