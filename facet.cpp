@@ -22,10 +22,10 @@ const QList<QVector3D *> &Facet::vertices() const
 double Facet::distanceTo(QVector3D point) const
 {
     auto diff = point - *(_vertices[0]);
-    auto edge0 = *(_vertices[0]) - *(_vertices[1]);
-    auto edge1 = *(_vertices[2]) - *(_vertices[0]);
-    auto uab = diff.dotProduct(diff, edge0)/edge0.lengthSquared();
-    auto uca = diff.dotProduct(diff, edge1)/edge1.lengthSquared();
+	auto edge0 = *(_vertices[1]) - *(_vertices[0]);
+	auto edge1 = *(_vertices[0]) - *(_vertices[2]);
+	auto uab = diff.dotProduct(point - *(_vertices[0]), edge0)/edge0.lengthSquared();
+	auto uca = diff.dotProduct(point - *(_vertices[2]), edge1)/edge1.lengthSquared();
 //    Project = (p - A).Dot( Delta ) / LengthSquared;
 //    var uab = EdgeAb.Project( p );
 //    var uca = EdgeCa.Project( p );
@@ -34,8 +34,8 @@ double Facet::distanceTo(QVector3D point) const
         return diff.length();
 
 //    var ubc = EdgeBc.Project( p );
-    auto edge2 = *(_vertices[1]) - *(_vertices[2]);
-    auto ubc = diff.dotProduct(diff, edge2)/edge2.lengthSquared();
+	auto edge2 = *(_vertices[2]) - *(_vertices[1]);
+	auto ubc = diff.dotProduct(point - *(_vertices[1]), edge2)/edge2.lengthSquared();
 
     if (uab > 1 && ubc < 0)
         return (point - *(_vertices[1])).length();
@@ -43,12 +43,13 @@ double Facet::distanceTo(QVector3D point) const
     if (ubc > 1 && uca < 0)
         return (point - *(_vertices[2])).length();
 
-    if ((uab >= 0) && (uab <= 1) && (ubc >= 0) && (ubc <= 1) && (uca >= 0) && (uca <= 1))
+	if ((uab > 0) && (uab < 1) && (ubc > 0) && (ubc < 1) && (uca > 0) && (uca < 1))
     {
-        return qMin(point.distanceToLine(*(_vertices[0]), edge0.normalized()),
-                qMin(point.distanceToLine(*(_vertices[1]), edge2.normalized()),
-                point.distanceToLine(*(_vertices[2]), edge1.normalized())));
+		return fabs(point.distanceToPlane(*_vertices[0], normal()));
     }
+	return qMin(fabs(point.distanceToLine(*(_vertices[0]), edge0.normalized())),
+			qMin(fabs(point.distanceToLine(*(_vertices[1]), edge2.normalized())),
+			fabs(point.distanceToLine(*(_vertices[2]), edge1.normalized()))));
 //    if (ZeroToOne.Contains( uab ) && !PlaneAb.IsAbove( p ))
 //        return EdgeAb.PointAt( uab );
 
@@ -60,7 +61,6 @@ double Facet::distanceTo(QVector3D point) const
 
     // The closest point is in the triangle so
     // project to the plane to find it
-    return point.distanceToPlane(*_vertices[0], normal());
 }
 //    const auto zero = 0.;
 //    const auto one = 1.;

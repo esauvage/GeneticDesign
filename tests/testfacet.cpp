@@ -31,10 +31,11 @@ void TestFacet::distanceTo()
     for (int i = 0; i < 10; ++i)
     {
         auto x = rand()/(double)RAND_MAX;
-        auto y = rand()/(double)RAND_MAX * x;
-        QVERIFY(x >= y);
-        qDebug() << x << y << i;
-        QVector3D point(x, y, 1);
+		auto y = rand()/(double)RAND_MAX *(1-x);
+		auto z = rand()%2 * 2 - 1;
+		qDebug() << i << x << y << z;
+		QVERIFY((x + y) <= 1.);
+		QVector3D point(x, y, z);
         QCOMPARE(f.distanceTo(point), 1.);
     }
     QVector3D point0(0, 0, 1);
