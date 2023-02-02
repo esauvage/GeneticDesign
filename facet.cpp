@@ -11,7 +11,7 @@ QVector3D Facet::normal() const
 {
     auto e1 = *_vertices[1] - *_vertices[0];
     auto e2 = *_vertices[2] - *_vertices[0];
-    return e1.crossProduct(e1, e2);
+    return e1.crossProduct(e1, e2).normalized();
 }
 
 const QList<QVector3D *> &Facet::vertices() const
@@ -21,208 +21,248 @@ const QList<QVector3D *> &Facet::vertices() const
 
 double Facet::distanceTo(QVector3D point) const
 {
-    const auto zero = 0.;
-    const auto one = 1.;
-    const auto two = 2.;
-    auto diff = *(_vertices[0]) - point;
-    auto edge0 = *(_vertices[1]) - *(_vertices[0]);
+    auto diff = point - *(_vertices[0]);
+    auto edge0 = *(_vertices[0]) - *(_vertices[1]);
     auto edge1 = *(_vertices[2]) - *(_vertices[0]);
-    auto a00 = edge0.dotProduct(edge0, edge0);
-    auto a01 = edge0.dotProduct(edge0, edge1);
-    auto a11 = edge1.dotProduct(edge1, edge1);
-    auto b0 = diff.dotProduct(diff, edge0);
-    auto b1 = diff.dotProduct(diff, edge1);
-    auto det = qMax(a00 * a11 - a01 * a01, zero);
-    auto s = a01 * b1 - a11 * b0;
-    auto t = a01 * b0 - a00 * b1;
+    auto uab = diff.dotProduct(diff, edge0)/edge0.lengthSquared();
+    auto uca = diff.dotProduct(diff, edge1)/edge1.lengthSquared();
+//    Project = (p - A).Dot( Delta ) / LengthSquared;
+//    var uab = EdgeAb.Project( p );
+//    var uca = EdgeCa.Project( p );
 
-    if (s + t <= det)
+    if (uca > 1 && uab < 0)
+        return diff.length();
+
+//    var ubc = EdgeBc.Project( p );
+    auto edge2 = *(_vertices[1]) - *(_vertices[2]);
+    auto ubc = diff.dotProduct(diff, edge2)/edge2.lengthSquared();
+
+    if (uab > 1 && ubc < 0)
+        return (point - *(_vertices[1])).length();
+
+    if (ubc > 1 && uca < 0)
+        return (point - *(_vertices[2])).length();
+
+    if ((uab >= 0) && (uab <= 1) && (ubc >= 0) && (ubc <= 1) && (uca >= 0) && (uca <= 1))
     {
-        if (s < zero)
-        {
-            if (t < zero)  // region 4
-            {
-                if (b0 < zero)
-                {
-                    t = zero;
-                    if (-b0 >= a00)
-                    {
-                        s = one;
-                    }
-                    else
-                    {
-                        s = -b0 / a00;
-                    }
-                }
-                else
-                {
-                    s = zero;
-                    if (b1 >= zero)
-                    {
-                        t = zero;
-                    }
-                    else if (-b1 >= a11)
-                    {
-                        t = one;
-                    }
-                    else
-                    {
-                        t = -b1 / a11;
-                    }
-                }
-            }
-            else  // region 3
-            {
-                s = zero;
-                if (b1 >= zero)
-                {
-                    t = zero;
-                }
-                else if (-b1 >= a11)
-                {
-                    t = one;
-                }
-                else
-                {
-                    t = -b1 / a11;
-                }
-            }
-        }
-        else if (t < zero)  // region 5
-        {
-            t = zero;
-            if (b0 >= zero)
-            {
-                s = zero;
-            }
-            else if (-b0 >= a00)
-            {
-                s = one;
-            }
-            else
-            {
-                s = -b0 / a00;
-            }
-        }
-        else  // region 0
-        {
-            // minimum at interior point
-            s /= det;
-            t /= det;
-        }
+        return qMin(point.distanceToLine(*(_vertices[0]), edge0.normalized()),
+                qMin(point.distanceToLine(*(_vertices[1]), edge2.normalized()),
+                point.distanceToLine(*(_vertices[2]), edge1.normalized())));
     }
-    else
-    {
-        auto tmp0{0.}, tmp1{0.}, numer{0.}, denom{0.};
+//    if (ZeroToOne.Contains( uab ) && !PlaneAb.IsAbove( p ))
+//        return EdgeAb.PointAt( uab );
 
-        if (s < zero)  // region 2
-        {
-            tmp0 = a01 + b0;
-            tmp1 = a11 + b1;
-            if (tmp1 > tmp0)
-            {
-                numer = tmp1 - tmp0;
-                denom = a00 - two * a01 + a11;
-                if (numer >= denom)
-                {
-                    s = one;
-                    t = zero;
-                }
-                else
-                {
-                    s = numer / denom;
-                    t = one - s;
-                }
-            }
-            else
-            {
-                s = zero;
-                if (tmp1 <= zero)
-                {
-                    t = one;
-                }
-                else if (b1 >= zero)
-                {
-                    t = zero;
-                }
-                else
-                {
-                    t = -b1 / a11;
-                }
-            }
-        }
-        else if (t < zero)  // region 6
-        {
-            tmp0 = a01 + b1;
-            tmp1 = a00 + b0;
-            if (tmp1 > tmp0)
-            {
-                numer = tmp1 - tmp0;
-                denom = a00 - two * a01 + a11;
-                if (numer >= denom)
-                {
-                    t = one;
-                    s = zero;
-                }
-                else
-                {
-                    t = numer / denom;
-                    s = one - t;
-                }
-            }
-            else
-            {
-                t = zero;
-                if (tmp1 <= zero)
-                {
-                    s = one;
-                }
-                else if (b0 >= zero)
-                {
-                    s = zero;
-                }
-                else
-                {
-                    s = -b0 / a00;
-                }
-            }
-        }
-        else  // region 1
-        {
-            numer = a11 + b1 - a01 - b0;
-            if (numer <= zero)
-            {
-                s = zero;
-                t = one;
-            }
-            else
-            {
-                denom = a00 - two * a01 + a11;
-                if (numer >= denom)
-                {
-                    s = one;
-                    t = zero;
-                }
-                else
-                {
-                    s = numer / denom;
-                    t = one - s;
-                }
-            }
-        }
-    }
+//    if (ZeroToOne.Contains( ubc ) && !PlaneBc.IsAbove( p ))
+//        return EdgeBc.PointAt( ubc );
 
-    QList<QVector3D>closest;
-    closest << point;
-    closest << *(_vertices[0]) + s * edge0 + t * edge1;
-    diff = closest[0] - closest[1];
-    auto sqrDistance = diff.dotProduct(diff, diff);
-    auto distance = std::sqrt(sqrDistance);
-//    result.barycentric[0] = one - s - t;
-//    result.barycentric[1] = s;
-//    result.barycentric[2] = t;
-    return distance;
+//    if (ZeroToOne.Contains( uca ) && !PlaneCa.IsAbove( p ))
+//        return EdgeCa.PointAt( uca );
+
+    // The closest point is in the triangle so
+    // project to the plane to find it
+    return point.distanceToPlane(*_vertices[0], normal());
 }
+//    const auto zero = 0.;
+//    const auto one = 1.;
+//    const auto two = 2.;
+// //   auto diff = *(_vertices[0]) - point;
+////    auto edge0 = *(_vertices[1]) - *(_vertices[0]);
+//    auto a00 = edge0.dotProduct(edge0, edge0);
+//    auto a01 = edge0.dotProduct(edge0, edge1);
+//    auto a11 = edge1.dotProduct(edge1, edge1);
+//    auto b0 = diff.dotProduct(diff, edge0);
+//    auto b1 = diff.dotProduct(diff, edge1);
+//    auto det = qMax(a00 * a11 - a01 * a01, zero);
+//    auto s = a01 * b1 - a11 * b0;
+//    auto t = a01 * b0 - a00 * b1;
+
+//    if (s + t <= det)
+//    {
+//        if (s < zero)
+//        {
+//            if (t < zero)  // region 4
+//            {
+//                if (b0 < zero)
+//                {
+//                    t = zero;
+//                    if (-b0 >= a00)
+//                    {
+//                        s = one;
+//                    }
+//                    else
+//                    {
+//                        s = -b0 / a00;
+//                    }
+//                }
+//                else
+//                {
+//                    s = zero;
+//                    if (b1 >= zero)
+//                    {
+//                        t = zero;
+//                    }
+//                    else if (-b1 >= a11)
+//                    {
+//                        t = one;
+//                    }
+//                    else
+//                    {
+//                        t = -b1 / a11;
+//                    }
+//                }
+//            }
+//            else  // region 3
+//            {
+//                s = zero;
+//                if (b1 >= zero)
+//                {
+//                    t = zero;
+//                }
+//                else if (-b1 >= a11)
+//                {
+//                    t = one;
+//                }
+//                else
+//                {
+//                    t = -b1 / a11;
+//                }
+//            }
+//        }
+//        else if (t < zero)  // region 5
+//        {
+//            t = zero;
+//            if (b0 >= zero)
+//            {
+//                s = zero;
+//            }
+//            else if (-b0 >= a00)
+//            {
+//                s = one;
+//            }
+//            else
+//            {
+//                s = -b0 / a00;
+//            }
+//        }
+//        else  // region 0
+//        {
+//            // minimum at interior point
+//            s /= det;
+//            t /= det;
+//        }
+//    }
+//    else
+//    {
+//        auto tmp0{0.}, tmp1{0.}, numer{0.}, denom{0.};
+
+//        if (s < zero)  // region 2
+//        {
+//            tmp0 = a01 + b0;
+//            tmp1 = a11 + b1;
+//            if (tmp1 > tmp0)
+//            {
+//                numer = tmp1 - tmp0;
+//                denom = a00 - two * a01 + a11;
+//                if (numer >= denom)
+//                {
+//                    s = one;
+//                    t = zero;
+//                }
+//                else
+//                {
+//                    s = numer / denom;
+//                    t = one - s;
+//                }
+//            }
+//            else
+//            {
+//                s = zero;
+//                if (tmp1 <= zero)
+//                {
+//                    t = one;
+//                }
+//                else if (b1 >= zero)
+//                {
+//                    t = zero;
+//                }
+//                else
+//                {
+//                    t = -b1 / a11;
+//                }
+//            }
+//        }
+//        else if (t < zero)  // region 6
+//        {
+//            tmp0 = a01 + b1;
+//            tmp1 = a00 + b0;
+//            if (tmp1 > tmp0)
+//            {
+//                numer = tmp1 - tmp0;
+//                denom = a00 - two * a01 + a11;
+//                if (numer >= denom)
+//                {
+//                    t = one;
+//                    s = zero;
+//                }
+//                else
+//                {
+//                    t = numer / denom;
+//                    s = one - t;
+//                }
+//            }
+//            else
+//            {
+//                t = zero;
+//                if (tmp1 <= zero)
+//                {
+//                    s = one;
+//                }
+//                else if (b0 >= zero)
+//                {
+//                    s = zero;
+//                }
+//                else
+//                {
+//                    s = -b0 / a00;
+//                }
+//            }
+//        }
+//        else  // region 1
+//        {
+//            numer = a11 + b1 - a01 - b0;
+//            if (numer <= zero)
+//            {
+//                s = zero;
+//                t = one;
+//            }
+//            else
+//            {
+//                denom = a00 - two * a01 + a11;
+//                if (numer >= denom)
+//                {
+//                    s = one;
+//                    t = zero;
+//                }
+//                else
+//                {
+//                    s = numer / denom;
+//                    t = one - s;
+//                }
+//            }
+//        }
+//    }
+
+//    QList<QVector3D>closest;
+//    closest << point;
+//    closest << *(_vertices[0]) + s * edge0 + t * edge1;
+//    diff = closest[0] - closest[1];
+//    auto sqrDistance = diff.dotProduct(diff, diff);
+//    auto distance = std::sqrt(sqrDistance);
+////    result.barycentric[0] = one - s - t;
+////    result.barycentric[1] = s;
+////    result.barycentric[2] = t;
+//    return distance;
+//}
 
 bool Facet::operator==(const Facet &f) const
 {
