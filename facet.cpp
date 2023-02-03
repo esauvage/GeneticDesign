@@ -31,7 +31,7 @@ double Facet::distanceTo(QVector3D point) const
 //    var uca = EdgeCa.Project( p );
 
     if (uca > 1 && uab < 0)
-        return diff.length();
+		return (point - *(_vertices[0])).length();
 
 //    var ubc = EdgeBc.Project( p );
 	auto edge2 = *(_vertices[2]) - *(_vertices[1]);
@@ -43,10 +43,28 @@ double Facet::distanceTo(QVector3D point) const
     if (ubc > 1 && uca < 0)
         return (point - *(_vertices[2])).length();
 
-	if ((uab > 0) && (uab < 1) && (ubc > 0) && (ubc < 1) && (uca > 0) && (uca < 1))
-    {
+	if (ubc <= 1 && ubc >= 0)
+	{
+		auto aOnBC = diff.dotProduct(*(_vertices[0]) - *(_vertices[1]), edge2)/edge2.lengthSquared()* edge2 + *_vertices[1];
+		if (point.dotProduct(point-*(_vertices[0]), aOnBC - *(_vertices[0]))/(aOnBC - *(_vertices[0])).lengthSquared() > 1)
+			return fabs(point.distanceToLine(*(_vertices[1]), edge2.normalized()));
+	}
+	if (uca <= 1 && uca >= 0)
+	{
+		auto bOnCA = diff.dotProduct(*(_vertices[1]) - *(_vertices[2]), edge1)/edge1.lengthSquared()* edge1 + *_vertices[2];
+		if (point.dotProduct(point-*(_vertices[1]), bOnCA - *(_vertices[1]))/(bOnCA - *(_vertices[1])).lengthSquared() > 1)
+			return fabs(point.distanceToLine(*(_vertices[2]), edge1.normalized()));
+	}
+	if (uab <= 1 && uab >= 0)
+	{
+		auto cOnAB = diff.dotProduct(*(_vertices[2]) - *(_vertices[0]), edge0)/edge0.lengthSquared()* edge0 + *_vertices[0];
+		if (point.dotProduct(point-*(_vertices[2]), cOnAB - *(_vertices[2]))/(cOnAB - *(_vertices[2])).lengthSquared() > 1)
+			return fabs(point.distanceToLine(*(_vertices[0]), edge0.normalized()));
+	}
+//	if ((uab > 0) && (uab < 1) && (ubc > 0) && (ubc < 1) && (uca > 0) && (uca < 1))
+//    {
 		return fabs(point.distanceToPlane(*_vertices[0], normal()));
-    }
+//    }
 	return qMin(fabs(point.distanceToLine(*(_vertices[0]), edge0.normalized())),
 			qMin(fabs(point.distanceToLine(*(_vertices[1]), edge2.normalized())),
 			fabs(point.distanceToLine(*(_vertices[2]), edge1.normalized()))));

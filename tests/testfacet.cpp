@@ -44,8 +44,10 @@ void TestFacet::distanceTo()
     QCOMPARE(f.distanceTo(point1), 1.);
     QVector3D point2(0, 1, -1);
     QCOMPARE(f.distanceTo(point2), 1.);
-    QVector3D point3(0, -1, 0);
-    QCOMPARE(f.distanceTo(point3), 1.);
+	QVector3D point3(0.5, -1, 0);
+	QCOMPARE(f.distanceTo(point3), 1.);
+	QVector3D point4(-1, 0.5, 0);
+	QCOMPARE(f.distanceTo(point4), 1.);
 }
 
 void TestFacet::surface()
