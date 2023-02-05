@@ -28,6 +28,7 @@ void TestFacet::distanceTo()
 {
     QVector3D p[3] = {QVector3D(0, 0, 0), QVector3D(1, 0, 0), QVector3D(0, 1, 0)};
     Facet f(&p[0], &p[1], &p[2]);
+	//Distances de part et d'autre du triangle, projection sur le triangle
     for (int i = 0; i < 10; ++i)
     {
         auto x = rand()/(double)RAND_MAX;
@@ -38,23 +39,51 @@ void TestFacet::distanceTo()
 		QVector3D point(x, y, z);
         QCOMPARE(f.distanceTo(point), 1.);
     }
-    QVector3D point0(0, 0, 1);
-    QCOMPARE(f.distanceTo(point0), 1.);
-    QVector3D point1(1, 0, -1);
+	//Distances sur les pointes
+	QVector3D point0(0, 0, rand()%2 * 2 - 1);
+	QCOMPARE(f.distanceTo(point0), 1.);
+	QVector3D point1(1, 0, rand()%2 * 2 - 1);
     QCOMPARE(f.distanceTo(point1), 1.);
-    QVector3D point2(0, 1, -1);
+	QVector3D point2(0, 1, rand()%2 * 2 - 1);
     QCOMPARE(f.distanceTo(point2), 1.);
+	//Distances aux arêtes
 	QVector3D point3(0.5, -1, 0);
 	QCOMPARE(f.distanceTo(point3), 1.);
 	QVector3D point4(-1, 0.5, 0);
 	QCOMPARE(f.distanceTo(point4), 1.);
+	QVector3D point5(0.7, 0.7, 0);
+	QVERIFY(fabs(fabs(f.distanceTo(point5) / (float)sqrt(0.08)) - 1.) < 0.0001);
 }
 
 void TestFacet::surface()
 {
-    QVector3D p[3] = {QVector3D(0, 0, 0), QVector3D(1, 0, 0), QVector3D(0, 1, 0)};
-    Facet f(&p[0], &p[1], &p[2]);
-    QCOMPARE(f.surface(), 0.5);
+	QVector3D p[3] = {QVector3D(0, 0, 0), QVector3D(1, 0, 0), QVector3D(0, 1, 0)};
+	Facet f(&p[0], &p[1], &p[2]);
+	QCOMPARE(f.surface(), 0.5);
+	QVector3D p1[3] = {QVector3D(0, 1, 0), QVector3D(2, 1, 0), QVector3D(0, 1, 2)};
+	Facet f2(&p1[0], &p1[1], &p1[2]);
+	QCOMPARE(f2.surface(), 2);
+}
+
+void TestFacet::fMemeCote()
+{
+	for (int i = 0; i < 10; ++i)
+	{
+		QVector3D p[3] = {QVector3D(rand()/(double)RAND_MAX, rand()/(double)RAND_MAX, rand()/(double)RAND_MAX),
+						  QVector3D(rand()/(double)RAND_MAX, rand()/(double)RAND_MAX, rand()/(double)RAND_MAX),
+						  QVector3D(rand()/(double)RAND_MAX, rand()/(double)RAND_MAX, rand()/(double)RAND_MAX)};
+		Facet f(&p[0], &p[1], &p[2]);
+		auto x = rand()/(double)RAND_MAX;
+		auto y = rand()/(double)RAND_MAX;
+		auto z = rand()/(double)RAND_MAX;
+		qDebug() << i << p[0];
+		qDebug() << p[1];
+		qDebug() << p[2];
+		auto point = QVector3D(2, 2, 2);
+		auto autreCote = QVector3D(-1, -1, -1);
+		QVERIFY(point.dotProduct(point - *(f.vertices()[0]), f.normal()) * point.dotProduct(point - *(f.vertices()[0]), f.normal()) >= 0.);
+//		QVERIFY(point.dotProduct(point - *(f.vertices()[0]), f.normal()) * autreCote.dotProduct(autreCote - *(f.vertices()[0]), f.normal()) <= 0.);
+	}
 }
 
 QTEST_MAIN(TestFacet)

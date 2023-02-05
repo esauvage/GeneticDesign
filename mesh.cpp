@@ -2,6 +2,7 @@
 
 #include <QFile>
 #include <QTextStream>
+#include <QMap>
 
 Mesh::Mesh()
 {
@@ -135,109 +136,145 @@ Facet *Mesh::nearestFacet(const QVector3D *p) const
             if (v->facets().contains(f))
             {
                 nbVolumes ++;
-                if (nbVolumes > 1)
-                {
-                    break;
-                }
-            }
+				//On ne va pas compter si le point ne peut pas atteindre la facette sans passer au travers d'un volume
+				for (const auto & point : v->vertices())
+				{
+					if (!f->vertices().contains(point))
+					{
+						//L'autre point du tétraèdre se projette du même côté que le point testé
+						if (p->dotProduct(*p - *f->vertices()[0], f->normal()) * point->dotProduct(*point - *f->vertices()[0], f->normal()) >= 0)
+						{
+							nbVolumes++;
+							break;
+						}
+					}
+					if (nbVolumes > 1)
+					{
+						break;
+					}
+				}
+				if (nbVolumes > 1)
+				{
+					break;
+				}
+			}
         }
         if (nbVolumes != 1)
         {
             ++j;
             continue;
         }
-        //On cherche le point du tétraèdre qui n'est pas sur la facette
-        QVector3D lastPoint;
-        for (auto x : curVol->vertices())
-        {
-            if (!f->vertices().contains(x))
-            {
-                lastPoint = *x;
-                break;
-            }
-        }
-        QVector3D n = f->normal().normalized();
-        lastPoint -= *f->vertices()[0];
-		auto coteLast = n.dotProduct(n, lastPoint);
-		auto coteNouveau = n.dotProduct(n, (*p - *f->vertices()[0]));
-        if ((coteLast * coteNouveau) >= 0)
-        {
-            continue;
-        }
-        lastPoint = *p - *f->vertices()[0];
-		auto dist = n.dotProduct(n, lastPoint);
-		if (f->isContaining(lastPoint - n*dist) || f->isContaining(lastPoint + n*dist))
+		auto dist = f->distanceTo(*p);
+		if ((d < 0) || (dist < d))
 		{
-			if ((d < 0) || (dist < d))
-			{
-				d = dist;
-				r = f;
-			}
+			d = dist;
+			r = f;
 		}
-    }
+	}
+	auto nbVolumes = 0;
+	for (auto &v : _volumes)
+	{
+		if (v->facets().contains(r))
+		{
+			nbVolumes ++;
+			if (nbVolumes > 1)
+				return nullptr;
+		}
+	}
+
 	return r;
-//	for (auto &f : _facets)
-//    {
-//		auto noDist = false;
-//		auto nbVolumes = 0;
-//		for (auto &v : _volumes)
-//		{
-//			if (v->facets().contains(f))
-//			{
-//				nbVolumes ++;
-//				if (nbVolumes > 1)
-//				{
-//					break;
-//				}
-//			}
-//		}
-//        if (nbVolumes != 1)
-//		{
-//			++j;
-//			continue;
-//		}
-//		if (i < 0)
+//        //On cherche le point du tétraèdre qui n'est pas sur la facette
+//        QVector3D lastPoint;
+//        for (auto x : curVol->vertices())
 //        {
-//            //On teste si on intersecte chaque future arête avec une facette
-//            for (auto &f2 : _facets)
+//            if (!f->vertices().contains(x))
 //            {
-//				if (f == f2)
-//					continue;
-//				for (auto &v : f->vertices())
-//                {
-////                    auto line = p - *v;
-//                    if (f2->intersect(p, v))
-//                    {
-//                        noDist = true;
-//                        break;
-//                    }
-//                }
-//                if (noDist)
-//                    break;
-//            }
-//			if (noDist)
-//			{
-//				++j;
-//				continue;
-//			}
-//			auto n = f->distanceTo(*p);
-//			d = n;
-//            i = j;
-//        }
-//        else
-//        {
-//			auto n = f->distanceTo(*p);
-//            if (n < d)
-//            {
-//                d = n;
-//                i = j;
+//                lastPoint = *x;
+//                break;
 //            }
 //        }
-//        ++j;
+//        QVector3D n = f->normal().normalized();
+//        lastPoint -= *f->vertices()[0];
+//		auto coteLast = n.dotProduct(n, lastPoint);
+//		auto coteNouveau = n.dotProduct(n, (*p - *f->vertices()[0]));
+//        if ((coteLast * coteNouveau) >= 0)
+//        {
+//            continue;
+//        }
+//        lastPoint = *p - *f->vertices()[0];
+//		auto dist = n.dotProduct(n, lastPoint);
+//		if (f->isContaining(lastPoint - n*dist) || f->isContaining(lastPoint + n*dist))
+//		{
+//			if ((d < 0) || (dist < d))
+//			{
+//				d = dist;
+//				r = f;
+//			}
+//		}
 //    }
-//	if (i < 0)
-//		return nullptr;
-//    return _facets[i];
+//	return r;
+////	for (auto &f : _facets)
+////    {
+////		auto noDist = false;
+////		auto nbVolumes = 0;
+////		for (auto &v : _volumes)
+////		{
+////			if (v->facets().contains(f))
+////			{
+////				nbVolumes ++;
+////				if (nbVolumes > 1)
+////				{
+////					break;
+////				}
+////			}
+////		}
+////        if (nbVolumes != 1)
+////		{
+////			++j;
+////			continue;
+////		}
+////		if (i < 0)
+////        {
+////            //On teste si on intersecte chaque future arête avec une facette
+////            for (auto &f2 : _facets)
+////            {
+////				if (f == f2)
+////					continue;
+////				for (auto &v : f->vertices())
+////                {
+//////                    auto line = p - *v;
+////                    if (f2->intersect(p, v))
+////                    {
+////                        noDist = true;
+////                        break;
+////                    }
+////                }
+////                if (noDist)
+////                    break;
+////            }
+////			if (noDist)
+////			{
+////				++j;
+////				continue;
+////			}
+////			auto n = f->distanceTo(*p);
+////			d = n;
+////            i = j;
+////        }
+////        else
+////        {
+////			auto n = f->distanceTo(*p);
+////            if (n < d)
+////            {
+////                d = n;
+////                i = j;
+////            }
+////        }
+////        ++j;
+////    }
+////	if (i < 0)
+////		return nullptr;
+////    return _facets[i];
 }
 
 void Mesh::addVolume(Volume &v)
@@ -275,7 +312,7 @@ void Mesh::diviseVolume(Volume *v)
 			}
 		}
 	}
-	QList <QVector3D *> newPoints;
+	QMap <QPair<int, int>, QVector3D *> newPoints;
 	QList <Facet *> newFacets;
 	QList <Facet *> volumeInterne;
 	for (auto & p : points)
@@ -283,15 +320,22 @@ void Mesh::diviseVolume(Volume *v)
 		for (auto & p2 : points)
 		{
 			if (p == p2)
+			{
+				newPoints[QPair<int, int>(points.indexOf(p), points.indexOf(p))] = p;
 				continue;
-			newPoints << new QVector3D((*p + *p2)/2);
+			}
+			newPoints[QPair<int, int>(points.indexOf(p), points.indexOf(p2))] = new QVector3D((*p + *p2)/2);
+			newPoints[QPair<int, int>(points.indexOf(p2), points.indexOf(p))] = newPoints[QPair<int, int>(points.indexOf(p), points.indexOf(p2))];
 		}
-		newFacets << new Facet(p, newPoints[0], newPoints[1]);
-		newFacets << new Facet(p, newPoints[1], newPoints[2]);
-		newFacets << new Facet(p, newPoints[2], newPoints[0]);
-		newFacets << new Facet(newPoints[0], newPoints[1], newPoints[2]);
-		volumeInterne << newFacets.last();
-		_volumes << new Volume(newFacets[0], newFacets[1], newFacets[2], newFacets[3]);
+//		newFacets << new Facet(p,
+//							   newPoints[QPair<int, int>(points.indexOf(p), points.indexOf(p)+1)],
+
+//				newPoints[1]);
+//		newFacets << new Facet(p, newPoints[1], newPoints[2]);
+//		newFacets << new Facet(p, newPoints[2], newPoints[0]);
+//		newFacets << new Facet(newPoints[0], newPoints[1], newPoints[2]);
+//		volumeInterne << newFacets.last();
+//		_volumes << new Volume(newFacets[0], newFacets[1], newFacets[2], newFacets[3]);
 //		_points
 		_facets << newFacets;
 	}

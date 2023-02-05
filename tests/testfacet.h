@@ -13,6 +13,7 @@ private slots:
     void normal();
     void distanceTo();
     void surface();
+	void fMemeCote();
 };
 
 #endif // TESTFACET_H
