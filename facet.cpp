@@ -1,6 +1,10 @@
 #include "facet.h"
 
 #include <QTextStream>
+#include <Eigen/Geometry>
+
+using Line2 = Eigen::Hyperplane<float,2>;
+using Vec2  = Eigen::Vector2f;
 
 Facet::Facet(QVector3D *a, QVector3D *b, QVector3D *c)
 {
@@ -336,6 +340,19 @@ void Facet::setVertice(int i, QVector3D *v)
 	_vertices[i] = v;
 }
 
+QVector3D Facet::coordLocales(const QVector3D &p) const
+{
+	//On cherche les coordonnées de p exprimées en distance au plan et combinaison linéaire des 2 vecteurs
+	auto x = p - *(_vertices[0]);
+	auto ab = *(_vertices[1]) - *(_vertices[0]);
+	auto ac = *(_vertices[2]) - *(_vertices[0]);
+	QVector3D res;
+	res.setZ(p.distanceToPlane(*(_vertices[0]), normal()));
+	res.setX(ab.dotProduct(ab, x));
+	res.setY(ac.dotProduct(ac, x));
+	return res;
+}
+
 bool Facet::intersect(const QVector3D *a, const QVector3D *b) const
 {
 	//p1 = [10,0,0]
@@ -364,7 +381,169 @@ bool Facet::intersect(const QVector3D *a, const QVector3D *b) const
 //	//    print(pi, " internal point")
 //	//else:
 //	//    print(pi, " external point")
-////	return true;
+	////	return true;
+}
+
+bool Facet::intersect(const Facet *f) const
+{
+	auto nbPointsCommuns = 0;
+	for (const auto & v : _vertices)
+		if (f->vertices().contains(v))
+			nbPointsCommuns++;
+	if (nbPointsCommuns > 1)
+		return false;
+	const auto &p = *(_vertices[0]);
+	const auto &n = normal();
+	auto cotes = 0.;
+	bool positif = true;
+	bool facesSecantes = false;
+	cotes = n.dotProduct(*(f->vertices()[0]) - p, n);
+	if (cotes < 0)
+	{
+		positif = false;
+	}
+	cotes *= n.dotProduct(*(f->vertices()[1]) - p, n);
+	//Les points d'une nouvelle facette intersectent une ancienne facette
+	if (cotes <= 0)
+	{
+		facesSecantes = true;
+	}
+	cotes *= n.dotProduct(*(f->vertices()[2]) - p, n);
+	if ((cotes <= 0 && positif) || (cotes >= 0 && !positif))
+	{
+		facesSecantes = true;
+	}
+	if (!facesSecantes)
+	{
+		return false;
+	}
+	//On calcule la droite d'intersection des plans des triangles
+	QVector3D origin(0, 0, 0);
+	auto n1 = f->normal();
+	auto pH = origin.distanceToPlane(p, n);
+	auto p1 = origin.distanceToPlane(*(f->vertices()[0]), n1);
+	auto lineDir = n.crossProduct(n, n1);
+//				n.x() * x + n.y() * y = -pH
+//				n1.x() * x + n1.y() * y = -p1
+	//				n1.y() * n.x() * x + n1.y() * n.y() * y = -n1.y() * pH
+	//				n1.x() * n.y() * x + n1.y() * n.y() * y = -n.y() * p1
+	//				(n1.y() * n.x() - n1.x() * n.y()) * x = n.y() * p1 - n1.y() * pH
+	//				n1.x() * n.y() * x + n1.y() * n.y() * y = -n.y() * p1
+	//				n.x() * x + n.z() * z = -pH
+	//				n1.x() * x + n1.z() * z = -p1
+	//				n1.z() * n.x() * x + n1.z() * n.z() * z = -n1.z() * pH
+	//				n.z() * n1.x() * x + n1.z() * n.z() * z = -n.z() * p1
+	// (n1.z() * n.x() - n.z() * n1.x) * x = n.z() *p1 - n1.z() * pH
+	double x = 0;
+	double y = 0;
+	double z = 0;
+	if (n1.y() * n.x() - n1.x() * n.y())
+	{
+		x = (n.y() * p1 - n1.y() * pH) / (n1.y() * n.x() - n1.x() * n.y());
+		y = n.y() ? (-pH - n.x() * x)/n.y() : (-p1 - n1.x() * x)/n1.y();
+	}
+	else
+	{
+		x = (n.z() * p1 - n1.z() * pH) / (n1.z() * n.x() - n1.x() * n.z());
+		z = n.z() ? (-pH - n.x() * x)/n.z() : (-p1 - n1.x() * x)/n1.z();
+	}
+	QVector3D linePoint(x, y, z);
+	//Est-ce que les triangles se croisent sur cette ligne ?
+	using Line2 = Eigen::Hyperplane<float,2>;
+	using Vec2  = Eigen::Vector2f;
+	QList<double> listPoints;
+	auto fLineDir = f->coordLocales(lineDir);
+	auto fLineOrig = f->coordLocales(linePoint);
+	Vec2 linedir(fLineDir.x(), fLineDir.y());
+	Vec2 linepoint(fLineOrig.x(), fLineOrig.y());
+	Vec2 b(0, 0);
+	Vec2 d(1, 0);
+
+	Line2 ac = Line2(linedir,linepoint);
+	Line2 bd = Line2::Through(b,d);
+	auto pIntersect = ac.intersection(bd);
+	if ((pIntersect - b).norm() + (pIntersect-d).norm()<= (d-b).norm())
+	{
+		auto dist = ac.signedDistance(pIntersect);
+		if (dist)
+			listPoints << dist;
+	}
+	b = Vec2(0, 0);
+	d = Vec2(0, 1);
+
+	bd = Line2::Through(b,d);
+	pIntersect = ac.intersection(bd);
+	if ((pIntersect - b).norm() + (pIntersect-d).norm()<= (d-b).norm())
+	{
+		auto dist = ac.signedDistance(pIntersect);
+		if (dist)
+			listPoints << dist;
+	}
+	b = Vec2(0, 1);
+	bd = Line2::Through(b,d);
+	pIntersect = ac.intersection(bd);
+	if ((pIntersect - b).norm() + (pIntersect-d).norm()<= (d-b).norm())
+	{
+		auto dist = ac.signedDistance(pIntersect);
+		if (dist)
+			listPoints << dist;
+	}
+	if (listPoints.isEmpty())
+	{
+		return false;
+	}
+	auto fRefLineDir = coordLocales(lineDir);
+	auto fRefLineOrig = coordLocales(linePoint);
+	QList<double> listPoints2;
+	linedir = Vec2(fRefLineDir.x(), fRefLineDir.y());
+	linepoint = Vec2(fRefLineOrig.x(), fRefLineOrig.y());
+	b = Vec2(0, 0);
+	d = Vec2(1, 0);
+
+	ac = Line2(linedir,linepoint);
+	bd = Line2::Through(b,d);
+	pIntersect = ac.intersection(bd);
+	if ((pIntersect - b).norm() + (pIntersect-d).norm()<= (d-b).norm())
+	{
+		auto dist = ac.signedDistance(pIntersect);
+		if (dist)
+			listPoints2 << dist;
+	}
+	b = Vec2(0, 0);
+	d = Vec2(0, 1);
+
+	bd = Line2::Through(b,d);
+	pIntersect = ac.intersection(bd);
+	if ((pIntersect - b).norm() + (pIntersect-d).norm()<= (d-b).norm())
+	{
+		auto dist = ac.signedDistance(pIntersect);
+		if (dist)
+			listPoints2 << dist;
+	}
+	b = Vec2(0, 1);
+	bd = Line2::Through(b,d);
+	pIntersect = ac.intersection(bd);
+	if ((pIntersect - b).norm() + (pIntersect-d).norm()<= (d-b).norm())
+	{
+		auto dist = ac.signedDistance(pIntersect);
+		if (dist)
+			listPoints2 << dist;
+	}
+	if (listPoints2.isEmpty())
+	{
+		return false;
+	}
+	std::sort(listPoints.begin(), listPoints.end());
+	std::sort(listPoints2.begin(), listPoints2.end());
+	if (listPoints.last() <= listPoints2.first())
+	{
+		return true;
+	}
+	if (listPoints2.last() <= listPoints.first())
+	{
+		return true;
+	}
+	return false;
 }
 
 QTextStream &operator<<(QTextStream &out, const Facet &facet)

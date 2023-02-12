@@ -14,6 +14,8 @@ private slots:
     void distanceTo();
     void surface();
 	void fMemeCote();
+	void coordLocale();
+	void intersectFacet();
 };
 
 #endif // TESTFACET_H

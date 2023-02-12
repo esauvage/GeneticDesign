@@ -1,4 +1,5 @@
 #include "meshgenerator.h"
+#include <Eigen/Geometry>
 
 MeshGenerator::MeshGenerator()
 {
@@ -52,9 +53,10 @@ Mesh *MeshGenerator::genere()
 			}
             continue;
 		}
-		Facet *f1 = new Facet(f->vertices()[0], f->vertices()[1], point);
-		Facet *f2 = new Facet(f->vertices()[1], f->vertices()[2], point);
-		Facet *f3 = new Facet(f->vertices()[2], f->vertices()[0], point);
+		QList <Facet *>newFacets;
+		newFacets << new Facet(f->vertices()[0], f->vertices()[1], point);
+		newFacets << new Facet(f->vertices()[1], f->vertices()[2], point);
+		newFacets << new Facet(f->vertices()[2], f->vertices()[0], point);
 		bool facesSecantes = false;
 		for (auto & fRef : m->facets())
 		{
@@ -62,90 +64,19 @@ Mesh *MeshGenerator::genere()
 				continue;
 			const auto &p = *(fRef->vertices()[0]);
 			const auto &n = fRef->normal();
-			auto cotes = 0.;
-			bool positif = true;
-			cotes = n.dotProduct(*(f1->vertices()[0]) - p, n);
-			if (cotes < 0)
+			for (auto f1: newFacets)
 			{
-				positif = false;
+				if (f1->intersect(fRef))
+				{
+					facesSecantes = true;
+					break;
+				}
 			}
-			cotes *= n.dotProduct(*(f1->vertices()[1]) - p, n);
-			//Les points d'une nouvelle facette intersectent une ancienne facette
-			if (cotes < 0)
-			{
-				facesSecantes = true;
-				break;
-			}
-			cotes *= n.dotProduct(*(f1->vertices()[2]) - p, n);
-			if ((cotes < 0 && positif) || (cotes > 0 && !positif))
-			{
-				facesSecantes = true;
-				break;
-			}
-			if (facesSecantes)
-			{
-				QVector3D origin(0, 0, 0);
-				auto n1 = f1->normal();
-				auto pH = origin.distanceToPlane(p, n);
-				auto p1 = origin.distanceToPlane(*(f1->vertices()[0]), n);
-				auto lineDir = n.crossProduct(n, f1->normal());
-//				n.x() * x + n.y() * y = -pH
-//				n1.x() * x + n1.y() * y = -p1
-				//				n1.y() * n.x() * x + n1.y() * n.y() * y = -n1.y() * pH
-				//				n1.x() * n.y() * x + n1.y() * n.y() * y = -n.y() * p1
-				//				(n1.y() * n.x() - n1.x() * n.y()) * x = n.y() * p1 - n1.y() * pH
-				//				n1.x() * n.y() * x + n1.y() * n.y() * y = -n.y() * p1
-				double x = (n.y() * p1 - n1.y() * pH) / (n1.y() * n.x() - n1.x() * n.y());
-				double y = (-pH - n.x() * x)/n.y();
-				QVector3D linePoint = (x, 0, 0);
-
-			}
-//			cotes = 0.;
-//			positif = true;
-//			cotes = n.dotProduct(*(f2->vertices()[0]) - p, n);
-//			if (cotes < 0)
-//			{
-//				positif = false;
-//			}
-//			cotes *= n.dotProduct(*(f2->vertices()[1]) - p, n);
-//			//Les points d'une nouvelle facette intersectent une ancienne facette
-//			if (cotes < 0)
-//			{
-//				facesSecantes = true;
-//				break;
-//			}
-//			cotes *= n.dotProduct(*(f2->vertices()[2]) - p, n);
-//			if ((cotes < 0 && positif) || (cotes > 0 && !positif))
-//			{
-//				facesSecantes = true;
-//				break;
-//			}
-//			cotes = 0.;
-//			positif = true;
-//			cotes = n.dotProduct(*(f3->vertices()[0]) - p, n);
-//			if (cotes < 0)
-//			{
-//				positif = false;
-//			}
-//			cotes *= n.dotProduct(*(f3->vertices()[1]) - p, n);
-//			//Les points d'une nouvelle facette intersectent une ancienne facette
-//			if (cotes < 0)
-//			{
-//				facesSecantes = true;
-//				break;
-//			}
-//			cotes *= n.dotProduct(*(f3->vertices()[2]) - p, n);
-//			if ((cotes < 0 && positif) || (cotes > 0 && !positif))
-//			{
-//				facesSecantes = true;
-//				break;
-//			}
+			if (facesSecantes) break;
 		}
 		if (facesSecantes)
 		{
-			delete f1;
-			delete f2;
-			delete f3;
+			qDeleteAll(newFacets);
 			delete point;
 			point = nullptr;
 			i --;
@@ -157,7 +88,7 @@ Mesh *MeshGenerator::genere()
 			continue;
 		}
 		nbFautes = 0;
-		Volume v(f, f1, f2, f3);
+		Volume v(f, newFacets[0], newFacets[1], newFacets[2]);
 		m->addVolume(v);
 	}
     return m;
