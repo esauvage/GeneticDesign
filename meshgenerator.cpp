@@ -62,8 +62,8 @@ Mesh *MeshGenerator::genere()
 		{
 			if (fRef == f)
 				continue;
-			const auto &p = *(fRef->vertices()[0]);
-			const auto &n = fRef->normal();
+//			const auto &p = *(fRef->vertices()[0]);
+//			const auto &n = fRef->normal();
 			for (auto f1: newFacets)
 			{
 				if (f1->intersect(fRef))

@@ -107,10 +107,10 @@ void TestFacet::intersectFacet()
 	Facet f1(&p1[0], &p1[1], &p1[2]);
 	QVERIFY(!f1.intersect(&f));
 	QVERIFY(!f.intersect(&f1));
-	QVector3D p2[3] = {QVector3D(0.1, 0.1, -0.5), QVector3D(0.1, 0.1, 0.5), QVector3D(1, 1, -0.5)};
+    QVector3D p2[3] = {QVector3D(0.5, 0, -0.5), QVector3D(0.5, 1, -0.5), QVector3D(0.5, 0, 0.5)};
 	Facet f2(&p2[0], &p2[1], &p2[2]);
-	QVERIFY(f2.intersect(&f));
-	QVERIFY(f.intersect(&f2));
+    QVERIFY(f.intersect(&f2));
+    QVERIFY(f2.intersect(&f));
 }
 
 QTEST_MAIN(TestFacet)

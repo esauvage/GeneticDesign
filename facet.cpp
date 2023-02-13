@@ -394,25 +394,39 @@ bool Facet::intersect(const Facet *f) const
 		return false;
 	const auto &p = *(_vertices[0]);
 	const auto &n = normal();
-	auto cotes = 0.;
-	bool positif = true;
+    auto cotes = 0.;
+    auto nextCote = 0.;
+    bool positif = true;
 	bool facesSecantes = false;
-	cotes = n.dotProduct(*(f->vertices()[0]) - p, n);
-	if (cotes < 0)
-	{
-		positif = false;
-	}
-	cotes *= n.dotProduct(*(f->vertices()[1]) - p, n);
+    auto curVertice = 0;
+    while(curVertice < 3 && cotes == 0)
+    {
+        cotes = n.dotProduct(*(f->vertices()[curVertice]) - p, n);
+        curVertice++;
+    }
+    if (cotes < 0)
+    {
+        positif = false;
+    }
+    while(curVertice < 3 && nextCote == 0)
+    {
+        nextCote = n.dotProduct(*(f->vertices()[curVertice]) - p, n);
+        curVertice++;
+    }
+    cotes *= nextCote;
 	//Les points d'une nouvelle facette intersectent une ancienne facette
-	if (cotes <= 0)
+    if (cotes < 0)
 	{
 		facesSecantes = true;
 	}
-	cotes *= n.dotProduct(*(f->vertices()[2]) - p, n);
-	if ((cotes <= 0 && positif) || (cotes >= 0 && !positif))
-	{
-		facesSecantes = true;
-	}
+    if (curVertice < 3)
+    {
+        cotes *= n.dotProduct(*(f->vertices()[2]) - p, n);
+        if ((cotes <= 0 && positif) || (cotes >= 0 && !positif))
+        {
+            facesSecantes = true;
+        }
+    }
 	if (!facesSecantes)
 	{
 		return false;
@@ -452,47 +466,81 @@ bool Facet::intersect(const Facet *f) const
 	using Line2 = Eigen::Hyperplane<float,2>;
 	using Vec2  = Eigen::Vector2f;
 	QList<double> listPoints;
-	auto fLineDir = f->coordLocales(lineDir);
+    auto fLineDir = f->coordLocales(lineDir).normalized();
 	auto fLineOrig = f->coordLocales(linePoint);
 	Vec2 linedir(fLineDir.x(), fLineDir.y());
 	Vec2 linepoint(fLineOrig.x(), fLineOrig.y());
 	Vec2 b(0, 0);
 	Vec2 d(1, 0);
 
-	Line2 ac = Line2(linedir,linepoint);
+    Line2 ac = Line2::Through(linepoint+linedir,linepoint);
 	Line2 bd = Line2::Through(b,d);
-	auto pIntersect = ac.intersection(bd);
-	if ((pIntersect - b).norm() + (pIntersect-d).norm()<= (d-b).norm())
-	{
-		auto dist = ac.signedDistance(pIntersect);
-		if (dist)
-			listPoints << dist;
-	}
+    Vec2 e = d - b;
+    Vec2 numerateur = e;
+    Vec2 denom = linedir;
+    Vec2 pIntersect;
+    if (!denom[0] || !denom[1])
+    {
+        numerateur = linedir;
+        denom = e;
+    }
+    if ((!denom[0] || !denom[1]) || (numerateur[0]/denom[0] != numerateur[1]/denom[1]))
+    {
+        pIntersect = ac.intersection(bd);
+        if ((pIntersect - b).norm() + (pIntersect-d).norm()<= (d-b).norm())
+        {
+            auto dist = linedir.dot(pIntersect-linepoint);//ac.signedDistance(pIntersect);
+    //		if (dist)
+                listPoints << dist;
+        }
+    }
 	b = Vec2(0, 0);
 	d = Vec2(0, 1);
 
 	bd = Line2::Through(b,d);
-	pIntersect = ac.intersection(bd);
-	if ((pIntersect - b).norm() + (pIntersect-d).norm()<= (d-b).norm())
-	{
-		auto dist = ac.signedDistance(pIntersect);
-		if (dist)
-			listPoints << dist;
-	}
-	b = Vec2(0, 1);
+    e = d - b;
+    numerateur = e;
+    denom = linedir;
+    if (!denom[0] || !denom[1])
+    {
+        numerateur = linedir;
+        denom = e;
+    }
+    if ((!denom[0] || !denom[1]) || (numerateur[0]/denom[0] != numerateur[1]/denom[1]))
+    {
+        pIntersect = ac.intersection(bd);
+        if ((pIntersect - b).norm() + (pIntersect-d).norm()<= (d-b).norm())
+        {
+            auto dist = linedir.dot(pIntersect-linepoint);//ac.signedDistance(pIntersect);
+    //		if (dist)
+                listPoints << dist;
+        }
+    }
+    b = Vec2(1, 0);
 	bd = Line2::Through(b,d);
-	pIntersect = ac.intersection(bd);
-	if ((pIntersect - b).norm() + (pIntersect-d).norm()<= (d-b).norm())
-	{
-		auto dist = ac.signedDistance(pIntersect);
-		if (dist)
-			listPoints << dist;
-	}
+    e = d - b;
+    numerateur = e;
+    denom = linedir;
+    if (!denom[0] || !denom[1])
+    {
+        numerateur = linedir;
+        denom = e;
+    }
+    if ((!denom[0] || !denom[1]) || (numerateur[0]/denom[0] != numerateur[1]/denom[1]))
+    {
+        pIntersect = ac.intersection(bd);
+        if ((pIntersect - b).norm() + (pIntersect-d).norm()<= (d-b).norm())
+        {
+            auto dist = linedir.dot(pIntersect-linepoint);//ac.signedDistance(pIntersect);
+    //		if (dist)
+                listPoints << dist;
+        }
+    }
 	if (listPoints.isEmpty())
 	{
 		return false;
 	}
-	auto fRefLineDir = coordLocales(lineDir);
+    auto fRefLineDir = coordLocales(lineDir).normalized();
 	auto fRefLineOrig = coordLocales(linePoint);
 	QList<double> listPoints2;
 	linedir = Vec2(fRefLineDir.x(), fRefLineDir.y());
@@ -500,46 +548,75 @@ bool Facet::intersect(const Facet *f) const
 	b = Vec2(0, 0);
 	d = Vec2(1, 0);
 
-	ac = Line2(linedir,linepoint);
+    ac = Line2::Through(linepoint+linedir,linepoint);
 	bd = Line2::Through(b,d);
-	pIntersect = ac.intersection(bd);
-	if ((pIntersect - b).norm() + (pIntersect-d).norm()<= (d-b).norm())
-	{
-		auto dist = ac.signedDistance(pIntersect);
-		if (dist)
-			listPoints2 << dist;
-	}
+    e = d - b;
+    numerateur = e;
+    denom = linedir;
+    if (!denom[0] || !denom[1])
+    {
+        numerateur = linedir;
+        denom = e;
+    }
+    if ((!denom[0] || !denom[1]) || (numerateur[0]/denom[0] != numerateur[1]/denom[1]))
+    {
+        pIntersect = ac.intersection(bd);
+        if ((pIntersect - b).norm() + (pIntersect-d).norm()<= (d-b).norm())
+        {
+            auto dist = linedir.dot(pIntersect-linepoint);//ac.signedDistance(pIntersect);
+    //		if (dist)
+                listPoints2 << dist;
+        }
+    }
 	b = Vec2(0, 0);
 	d = Vec2(0, 1);
 
 	bd = Line2::Through(b,d);
-	pIntersect = ac.intersection(bd);
-	if ((pIntersect - b).norm() + (pIntersect-d).norm()<= (d-b).norm())
-	{
-		auto dist = ac.signedDistance(pIntersect);
-		if (dist)
-			listPoints2 << dist;
-	}
+    e = d - b;
+    numerateur = e;
+    denom = linedir;
+    if (!denom[0] || !denom[1])
+    {
+        numerateur = linedir;
+        denom = e;
+    }
+    if ((!denom[0] || !denom[1]) || (numerateur[0]/denom[0] != numerateur[1]/denom[1]))
+    {
+        pIntersect = ac.intersection(bd);
+        if ((pIntersect - b).norm() + (pIntersect-d).norm()<= (d-b).norm())
+        {
+            auto dist = linedir.dot(pIntersect-linepoint);//ac.signedDistance(pIntersect);
+    //		if (dist)
+                listPoints2 << dist;
+        }
+    }
 	b = Vec2(0, 1);
 	bd = Line2::Through(b,d);
-	pIntersect = ac.intersection(bd);
-	if ((pIntersect - b).norm() + (pIntersect-d).norm()<= (d-b).norm())
-	{
-		auto dist = ac.signedDistance(pIntersect);
-		if (dist)
-			listPoints2 << dist;
-	}
+    e = d - b;
+    numerateur = e;
+    denom = linedir;
+    if (!denom[0] || !denom[1])
+    {
+        numerateur = linedir;
+        denom = e;
+    }
+    if ((!denom[0] || !denom[1]) || (numerateur[0]/denom[0] != numerateur[1]/denom[1]))
+    {
+        pIntersect = ac.intersection(bd);
+        if ((pIntersect - b).norm() + (pIntersect-d).norm()<= (d-b).norm())
+        {
+            auto dist = linedir.dot(pIntersect-linepoint);//ac.signedDistance(pIntersect);
+    //		if (dist)
+                listPoints2 << dist;
+        }
+    }
 	if (listPoints2.isEmpty())
 	{
 		return false;
 	}
 	std::sort(listPoints.begin(), listPoints.end());
 	std::sort(listPoints2.begin(), listPoints2.end());
-	if (listPoints.last() <= listPoints2.first())
-	{
-		return true;
-	}
-	if (listPoints2.last() <= listPoints.first())
+    if (listPoints.last() > listPoints2.first() && listPoints2.last() > listPoints.first())
 	{
 		return true;
 	}
