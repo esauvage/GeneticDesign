@@ -111,6 +111,11 @@ void TestFacet::intersectFacet()
 	Facet f2(&p2[0], &p2[1], &p2[2]);
     QVERIFY(f.intersect(&f2));
     QVERIFY(f2.intersect(&f));
+	//f et f4 se touchent par la pointe
+	QVector3D p3[2] = {QVector3D(1, 0, 1), QVector3D(0, 1, 1)};
+	Facet f3(&p3[0], &p[0], &p3[1]);
+	QVERIFY(!f.intersect(&f3));
+	QVERIFY(!f3.intersect(&f));
 }
 
 QTEST_MAIN(TestFacet)

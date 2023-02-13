@@ -590,7 +590,7 @@ bool Facet::intersect(const Facet *f) const
                 listPoints2 << dist;
         }
     }
-	b = Vec2(0, 1);
+	b = Vec2(1, 0);
 	bd = Line2::Through(b,d);
     e = d - b;
     numerateur = e;
