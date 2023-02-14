@@ -13,8 +13,8 @@ private slots:
     void normal();
     void distanceTo();
     void surface();
-	void fMemeCote();
 	void coordLocale();
+	void coteUnique();
 	void intersectFacet();
 };
 

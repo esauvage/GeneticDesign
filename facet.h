@@ -20,6 +20,7 @@ public:
 	double surface() const;
 	void setVertice(int i, QVector3D *v);
 	QVector3D coordLocales(const QVector3D &p) const;
+	bool coteUnique(const Facet *f) const;
 
 private:
     QList<QVector3D *> _vertices;

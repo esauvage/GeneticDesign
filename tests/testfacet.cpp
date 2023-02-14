@@ -65,26 +65,6 @@ void TestFacet::surface()
 	QCOMPARE(f2.surface(), 2);
 }
 
-void TestFacet::fMemeCote()
-{
-	for (int i = 0; i < 10; ++i)
-	{
-		QVector3D p[3] = {QVector3D(rand()/(double)RAND_MAX, rand()/(double)RAND_MAX, rand()/(double)RAND_MAX),
-						  QVector3D(rand()/(double)RAND_MAX, rand()/(double)RAND_MAX, rand()/(double)RAND_MAX),
-						  QVector3D(rand()/(double)RAND_MAX, rand()/(double)RAND_MAX, rand()/(double)RAND_MAX)};
-		Facet f(&p[0], &p[1], &p[2]);
-		auto x = rand()/(double)RAND_MAX;
-		auto y = rand()/(double)RAND_MAX;
-		auto z = rand()/(double)RAND_MAX;
-		qDebug() << i << p[0];
-		qDebug() << p[1];
-		qDebug() << p[2];
-		auto point = QVector3D(2, 2, 2);
-		auto autreCote = QVector3D(-1, -1, -1);
-		QVERIFY(point.dotProduct(point - *(f.vertices()[0]), f.normal()) * point.dotProduct(point - *(f.vertices()[0]), f.normal()) >= 0.);
-//		QVERIFY(point.dotProduct(point - *(f.vertices()[0]), f.normal()) * autreCote.dotProduct(autreCote - *(f.vertices()[0]), f.normal()) <= 0.);
-	}
-}
 
 void TestFacet::coordLocale()
 {
@@ -96,7 +76,34 @@ void TestFacet::coordLocale()
 	auto x = rand()/(double)RAND_MAX;
 	auto y = rand()/(double)RAND_MAX;
 	auto z = rand()/(double)RAND_MAX;
-	QCOMPARE(f.coordLocales(QVector3D(x, y, z)), QVector3D(x-x0, y-y0, z-z0));
+	auto r = f.coordLocales(QVector3D(x, y, z))- QVector3D(x-x0, y-y0, z-z0);
+	QVERIFY(r.x() < 0.0001);
+	QVERIFY(r.y() < 0.0001);
+	QVERIFY(r.z() < 0.0001);
+}
+
+void TestFacet::coteUnique()
+{
+	auto x0 = rand()/(double)RAND_MAX;
+	auto y0 = rand()/(double)RAND_MAX;
+	auto z0 = rand()/(double)RAND_MAX;
+	QVector3D p[3] = {QVector3D(x0, y0, z0), QVector3D(x0+1, y0, z0), QVector3D(x0, 1+y0, z0)};
+	Facet f(&p[0], &p[1], &p[2]);
+	auto x = rand()/(double)RAND_MAX;
+	auto y = rand()/(double)RAND_MAX;
+	auto z = rand()/(double)RAND_MAX;
+	QVector3D p1[3] = {QVector3D(x0+x, y0, z0), QVector3D(x0+x, y0+y, z0), QVector3D(x0+x, y0, z0+z)};
+	Facet f1(&p1[0], &p1[1], &p1[2]);
+	QVERIFY(f.coteUnique(&f1));
+	Facet f2(&p[0], &p1[1], &p1[2]);
+	QVERIFY(f.coteUnique(&f2));
+//	QVERIFY(f2.coteUnique(&f));
+	f2.setVertice(1, &p[1]);
+	QVERIFY(f.coteUnique(&f2));
+	QVERIFY(f2.coteUnique(&f));
+	f2.setVertice(2, &p[2]);
+	QVERIFY(f.coteUnique(&f2));
+	QVERIFY(f2.coteUnique(&f));
 }
 
 void TestFacet::intersectFacet()

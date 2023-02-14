@@ -353,6 +353,51 @@ QVector3D Facet::coordLocales(const QVector3D &p) const
 	return res;
 }
 
+bool Facet::coteUnique(const Facet *f) const
+{
+	auto nbPointsCommuns = 0;
+	for (const auto & v : _vertices)
+		if (f->vertices().contains(v))
+			nbPointsCommuns++;
+	if (nbPointsCommuns > 1)
+		return true;
+	const auto &p = *(_vertices[0]);
+	const auto &n = normal();
+	auto cotes = 0.;
+	auto nextCote = 0.;
+	bool positif = true;
+	auto curVertice = 0;
+	while(curVertice < 3 && cotes == 0)
+	{
+		cotes = n.dotProduct(*(f->vertices()[curVertice]) - p, n);
+		curVertice++;
+	}
+	if (cotes < 0)
+	{
+		positif = false;
+	}
+	while(curVertice < 3 && nextCote == 0)
+	{
+		nextCote = n.dotProduct(*(f->vertices()[curVertice]) - p, n);
+		curVertice++;
+	}
+	cotes *= nextCote;
+	//Les points d'une nouvelle facette intersectent une ancienne facette
+	if (cotes < 0)
+	{
+		return false;
+	}
+	if (curVertice < 3)
+	{
+		cotes *= n.dotProduct(*(f->vertices()[2]) - p, n);
+		if ((cotes <= 0 && positif) || (cotes >= 0 && !positif))
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
 bool Facet::intersect(const QVector3D *a, const QVector3D *b) const
 {
 	//p1 = [10,0,0]
@@ -386,54 +431,13 @@ bool Facet::intersect(const QVector3D *a, const QVector3D *b) const
 
 bool Facet::intersect(const Facet *f) const
 {
-	auto nbPointsCommuns = 0;
-	for (const auto & v : _vertices)
-		if (f->vertices().contains(v))
-			nbPointsCommuns++;
-	if (nbPointsCommuns > 1)
+	if (coteUnique(f) || f->coteUnique(this))
 		return false;
-	const auto &p = *(_vertices[0]);
-	const auto &n = normal();
-    auto cotes = 0.;
-    auto nextCote = 0.;
-    bool positif = true;
-	bool facesSecantes = false;
-    auto curVertice = 0;
-    while(curVertice < 3 && cotes == 0)
-    {
-        cotes = n.dotProduct(*(f->vertices()[curVertice]) - p, n);
-        curVertice++;
-    }
-    if (cotes < 0)
-    {
-        positif = false;
-    }
-    while(curVertice < 3 && nextCote == 0)
-    {
-        nextCote = n.dotProduct(*(f->vertices()[curVertice]) - p, n);
-        curVertice++;
-    }
-    cotes *= nextCote;
-	//Les points d'une nouvelle facette intersectent une ancienne facette
-    if (cotes < 0)
-	{
-		facesSecantes = true;
-	}
-    if (curVertice < 3)
-    {
-        cotes *= n.dotProduct(*(f->vertices()[2]) - p, n);
-        if ((cotes <= 0 && positif) || (cotes >= 0 && !positif))
-        {
-            facesSecantes = true;
-        }
-    }
-	if (!facesSecantes)
-	{
-		return false;
-	}
+	auto n1 = f->normal();
+	auto n = normal();
+	auto p = *(_vertices[0]);
 	//On calcule la droite d'intersection des plans des triangles
 	QVector3D origin(0, 0, 0);
-	auto n1 = f->normal();
 	auto pH = origin.distanceToPlane(p, n);
 	auto p1 = origin.distanceToPlane(*(f->vertices()[0]), n1);
 	auto lineDir = n.crossProduct(n, n1);
