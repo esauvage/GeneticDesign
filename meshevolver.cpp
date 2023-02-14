@@ -23,12 +23,14 @@ void MeshEvolver::evolve(Mesh *m)
 			ref = m->vertices()[j];
 			fMemeCote = true;
 			fFacetteCroisees = false;
-			if (p)
-				delete p;
-			p = new QVector3D(*ref);
-			*p+= QVector3D(rand()*0.02/(double)RAND_MAX - 0.01,
-						rand()*0.02/(double)RAND_MAX - 0.01,
-						rand()*0.02/(double)RAND_MAX - 0.01);
+            do{
+                if (p)
+                    delete p;
+                p = new QVector3D(*ref);
+                *p+= QVector3D(rand()*0.02/(double)RAND_MAX - 0.01,
+                            rand()*0.02/(double)RAND_MAX - 0.01,
+                            rand()*0.02/(double)RAND_MAX - 0.01);
+            }while (m->isIncluding(*p));
 			for (auto & f : m->facets())
 			{
 				if (!f->vertices().contains(ref))
@@ -68,7 +70,7 @@ void MeshEvolver::evolve(Mesh *m)
 						break;
 				}
 			}
-		}while (m->isIncluding(*p) || !fMemeCote || fFacetteCroisees);
+        }while (!fMemeCote || fFacetteCroisees);
 		m->setVertice(j, p);
 		delete p;
 	}

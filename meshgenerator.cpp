@@ -25,8 +25,9 @@ Mesh *MeshGenerator::genere()
 	Facet *f4 = new Facet(d, a, c);
 	Volume v(f1, f2, f3, f4);
 	m->addVolume(v);
-    auto nbFautes = 0;
-	for (auto i = 0; i < 50; ++i)
+    auto nbFautesNear = 0;
+    auto nbFautesCross = 0;
+    for (auto i = 0; i < 50; ++i)
 	{
 		QVector3D * point = nullptr;
 		for (;!point || m->isIncluding(*point); )
@@ -44,8 +45,8 @@ Mesh *MeshGenerator::genere()
 //			m->nearestFacet(point);
 			delete point;
 			point = nullptr;
-			nbFautes++;
-			if (nbFautes > 100)
+            nbFautesNear++;
+            if (nbFautesNear > 100)
 			{
 //				m->diviseVolume(m->volumes().last());
 //				delete point;
@@ -80,15 +81,16 @@ Mesh *MeshGenerator::genere()
 			delete point;
 			point = nullptr;
 			i --;
-			nbFautes++;
-			if (nbFautes > 100)
+            nbFautesCross++;
+            if (nbFautesCross > 100)
 			{
 				break;
 			}
 			continue;
 		}
-		nbFautes = 0;
-		Volume v(f, newFacets[0], newFacets[1], newFacets[2]);
+        nbFautesNear = 0;
+        nbFautesCross = 0;
+        Volume v(f, newFacets[0], newFacets[1], newFacets[2]);
 		m->addVolume(v);
 	}
     return m;

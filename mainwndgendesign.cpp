@@ -23,7 +23,10 @@ MainWndGenDesign::MainWndGenDesign(QWidget *parent)
 		l = l>1 ? l : 1/l;
 		_population.insert(m->surface()/m->volume() * l, m);
 	}
-	auto nbGenerations = 1;
+    for (auto i = 0; i < _population.size(); ++i) {
+        _population.values()[i]->toFile(QString("test%1.stl").arg(i));
+    }
+    auto nbGenerations = 1;
     for (int k = 0; k < nbGenerations; k++)
     {
 		QMultiMap <double, Mesh *> _newPop;
@@ -41,6 +44,9 @@ MainWndGenDesign::MainWndGenDesign(QWidget *parent)
 			_newPop.insert(m->surface()/m->volume() * l, m);
         }
         _population = _newPop;
+        for (auto i = 0; i < _population.size(); ++i) {
+            _population.values()[i]->toFile(QString("test%1.stl").arg(i));
+        }
     }
     for (auto m : _population.values())
     {

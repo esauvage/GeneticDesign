@@ -395,7 +395,48 @@ bool Facet::coteUnique(const Facet *f) const
 			return false;
 		}
 	}
-	return true;
+    return true;
+}
+
+QPair<QVector3D, QVector3D> Facet::commonLine(const Facet *f) const
+{
+    QPair<QVector3D, QVector3D>r;
+    auto n1 = f->normal();
+    auto n = normal();
+    auto lineDir = n.crossProduct(n, n1);
+    if (lineDir.isNull())
+        return r;
+    //On calcule la droite d'intersection des plans des triangles
+    QVector3D origin(0, 0, 0);
+    auto p = origin.distanceToPlane(*(_vertices[0]), n);
+    auto p1 = origin.distanceToPlane(*(f->vertices()[0]), n1);
+//				n.x() * x + n.y() * y = -pH
+//				n1.x() * x + n1.y() * y = -p1
+    //				n1.y() * n.x() * x + n1.y() * n.y() * y = -n1.y() * pH
+    //				n1.x() * n.y() * x + n1.y() * n.y() * y = -n.y() * p1
+    //				(n1.y() * n.x() - n1.x() * n.y()) * x = n.y() * p1 - n1.y() * pH
+    //				n1.x() * n.y() * x + n1.y() * n.y() * y = -n.y() * p1
+    //				n.x() * x + n.z() * z = -pH
+    //				n1.x() * x + n1.z() * z = -p1
+    //				n1.z() * n.x() * x + n1.z() * n.z() * z = -n1.z() * pH
+    //				n.z() * n1.x() * x + n1.z() * n.z() * z = -n.z() * p1
+    // (n1.z() * n.x() - n.z() * n1.x) * x = n.z() *p1 - n1.z() * pH
+    double x = 0;
+    double y = 0;
+    double z = 0;
+    if (n1.y() * n.x() - n1.x() * n.y())
+    {
+        x = (n.y() * p1 - n1.y() * p) / (n1.y() * n.x() - n1.x() * n.y());
+        y = n.y() ? (-p - n.x() * x)/n.y() : (-p1 - n1.x() * x)/n1.y();
+    }
+    else
+    {
+        x = (n.z() * p1 - n1.z() * p) / (n1.z() * n.x() - n1.x() * n.z());
+        z = n.z() ? (-p - n.x() * x)/n.z() : (-p1 - n1.x() * x)/n1.z();
+    }
+    r.first = QVector3D(x, y, z);
+    r.second = r.first+lineDir;
+    return r;
 }
 
 bool Facet::intersect(const QVector3D *a, const QVector3D *b) const
@@ -432,60 +473,35 @@ bool Facet::intersect(const QVector3D *a, const QVector3D *b) const
 bool Facet::intersect(const Facet *f) const
 {
 	if (coteUnique(f) || f->coteUnique(this))
+    {
 		return false;
-	auto n1 = f->normal();
-	auto n = normal();
-	auto p = *(_vertices[0]);
-	//On calcule la droite d'intersection des plans des triangles
-	QVector3D origin(0, 0, 0);
-	auto pH = origin.distanceToPlane(p, n);
-	auto p1 = origin.distanceToPlane(*(f->vertices()[0]), n1);
-	auto lineDir = n.crossProduct(n, n1);
-//				n.x() * x + n.y() * y = -pH
-//				n1.x() * x + n1.y() * y = -p1
-	//				n1.y() * n.x() * x + n1.y() * n.y() * y = -n1.y() * pH
-	//				n1.x() * n.y() * x + n1.y() * n.y() * y = -n.y() * p1
-	//				(n1.y() * n.x() - n1.x() * n.y()) * x = n.y() * p1 - n1.y() * pH
-	//				n1.x() * n.y() * x + n1.y() * n.y() * y = -n.y() * p1
-	//				n.x() * x + n.z() * z = -pH
-	//				n1.x() * x + n1.z() * z = -p1
-	//				n1.z() * n.x() * x + n1.z() * n.z() * z = -n1.z() * pH
-	//				n.z() * n1.x() * x + n1.z() * n.z() * z = -n.z() * p1
-	// (n1.z() * n.x() - n.z() * n1.x) * x = n.z() *p1 - n1.z() * pH
-	double x = 0;
-	double y = 0;
-	double z = 0;
-	if (n1.y() * n.x() - n1.x() * n.y())
-	{
-		x = (n.y() * p1 - n1.y() * pH) / (n1.y() * n.x() - n1.x() * n.y());
-		y = n.y() ? (-pH - n.x() * x)/n.y() : (-p1 - n1.x() * x)/n1.y();
-	}
-	else
-	{
-		x = (n.z() * p1 - n1.z() * pH) / (n1.z() * n.x() - n1.x() * n.z());
-		z = n.z() ? (-pH - n.x() * x)/n.z() : (-p1 - n1.x() * x)/n1.z();
-	}
-	QVector3D linePoint(x, y, z);
+    }
+    auto line = commonLine(f);
+    if (line.first.isNull() || line.second.isNull())
+    {
+        return false;
+    }
 	//Est-ce que les triangles se croisent sur cette ligne ?
 	using Line2 = Eigen::Hyperplane<float,2>;
 	using Vec2  = Eigen::Vector2f;
 	QList<double> listPoints;
-    auto fLineDir = f->coordLocales(lineDir).normalized();
-	auto fLineOrig = f->coordLocales(linePoint);
-	Vec2 linedir(fLineDir.x(), fLineDir.y());
-	Vec2 linepoint(fLineOrig.x(), fLineOrig.y());
+    auto fLineA = f->coordLocales(line.first);
+    auto fLineC = f->coordLocales(line.second);
+    Vec2 a(fLineA.x(), fLineA.y());
+    Vec2 c(fLineC.x(), fLineC.y());
 	Vec2 b(0, 0);
 	Vec2 d(1, 0);
 
-    Line2 ac = Line2::Through(linepoint+linedir,linepoint);
+    Line2 ac = Line2::Through(a,c);
 	Line2 bd = Line2::Through(b,d);
     Vec2 e = d - b;
+    Vec2 g = c - a;
     Vec2 numerateur = e;
-    Vec2 denom = linedir;
+    Vec2 denom = g;
     Vec2 pIntersect;
     if (!denom[0] || !denom[1])
     {
-        numerateur = linedir;
+        numerateur = g;
         denom = e;
     }
     if ((!denom[0] || !denom[1]) || (numerateur[0]/denom[0] != numerateur[1]/denom[1]))
@@ -493,7 +509,7 @@ bool Facet::intersect(const Facet *f) const
         pIntersect = ac.intersection(bd);
         if ((pIntersect - b).norm() + (pIntersect-d).norm()<= (d-b).norm())
         {
-            auto dist = linedir.dot(pIntersect-linepoint);//ac.signedDistance(pIntersect);
+            auto dist = ac.signedDistance(pIntersect);
     //		if (dist)
                 listPoints << dist;
         }
@@ -504,10 +520,10 @@ bool Facet::intersect(const Facet *f) const
 	bd = Line2::Through(b,d);
     e = d - b;
     numerateur = e;
-    denom = linedir;
+    denom = g;
     if (!denom[0] || !denom[1])
     {
-        numerateur = linedir;
+        numerateur = g;
         denom = e;
     }
     if ((!denom[0] || !denom[1]) || (numerateur[0]/denom[0] != numerateur[1]/denom[1]))
@@ -515,7 +531,7 @@ bool Facet::intersect(const Facet *f) const
         pIntersect = ac.intersection(bd);
         if ((pIntersect - b).norm() + (pIntersect-d).norm()<= (d-b).norm())
         {
-            auto dist = linedir.dot(pIntersect-linepoint);//ac.signedDistance(pIntersect);
+            auto dist = ac.signedDistance(pIntersect);
     //		if (dist)
                 listPoints << dist;
         }
@@ -524,10 +540,10 @@ bool Facet::intersect(const Facet *f) const
 	bd = Line2::Through(b,d);
     e = d - b;
     numerateur = e;
-    denom = linedir;
+    denom = g;
     if (!denom[0] || !denom[1])
     {
-        numerateur = linedir;
+        numerateur = g;
         denom = e;
     }
     if ((!denom[0] || !denom[1]) || (numerateur[0]/denom[0] != numerateur[1]/denom[1]))
@@ -535,7 +551,7 @@ bool Facet::intersect(const Facet *f) const
         pIntersect = ac.intersection(bd);
         if ((pIntersect - b).norm() + (pIntersect-d).norm()<= (d-b).norm())
         {
-            auto dist = linedir.dot(pIntersect-linepoint);//ac.signedDistance(pIntersect);
+            auto dist = ac.signedDistance(pIntersect);
     //		if (dist)
                 listPoints << dist;
         }
@@ -544,22 +560,23 @@ bool Facet::intersect(const Facet *f) const
 	{
 		return false;
 	}
-    auto fRefLineDir = coordLocales(lineDir).normalized();
-	auto fRefLineOrig = coordLocales(linePoint);
+    fLineA = coordLocales(line.first);
+    fLineC = coordLocales(line.second);
 	QList<double> listPoints2;
-	linedir = Vec2(fRefLineDir.x(), fRefLineDir.y());
-	linepoint = Vec2(fRefLineOrig.x(), fRefLineOrig.y());
+    a = Vec2(fLineA.x(), fLineA.y());
+    c = Vec2(fLineC.x(), fLineC.y());
 	b = Vec2(0, 0);
 	d = Vec2(1, 0);
 
-    ac = Line2::Through(linepoint+linedir,linepoint);
+    ac = Line2::Through(a,c);
 	bd = Line2::Through(b,d);
     e = d - b;
+    g = c - a;
     numerateur = e;
-    denom = linedir;
+    denom = g;
     if (!denom[0] || !denom[1])
     {
-        numerateur = linedir;
+        numerateur = g;
         denom = e;
     }
     if ((!denom[0] || !denom[1]) || (numerateur[0]/denom[0] != numerateur[1]/denom[1]))
@@ -567,7 +584,7 @@ bool Facet::intersect(const Facet *f) const
         pIntersect = ac.intersection(bd);
         if ((pIntersect - b).norm() + (pIntersect-d).norm()<= (d-b).norm())
         {
-            auto dist = linedir.dot(pIntersect-linepoint);//ac.signedDistance(pIntersect);
+            auto dist = ac.signedDistance(pIntersect);
     //		if (dist)
                 listPoints2 << dist;
         }
@@ -578,10 +595,10 @@ bool Facet::intersect(const Facet *f) const
 	bd = Line2::Through(b,d);
     e = d - b;
     numerateur = e;
-    denom = linedir;
+    denom = g;
     if (!denom[0] || !denom[1])
     {
-        numerateur = linedir;
+        numerateur = g;
         denom = e;
     }
     if ((!denom[0] || !denom[1]) || (numerateur[0]/denom[0] != numerateur[1]/denom[1]))
@@ -589,7 +606,7 @@ bool Facet::intersect(const Facet *f) const
         pIntersect = ac.intersection(bd);
         if ((pIntersect - b).norm() + (pIntersect-d).norm()<= (d-b).norm())
         {
-            auto dist = linedir.dot(pIntersect-linepoint);//ac.signedDistance(pIntersect);
+            auto dist = ac.signedDistance(pIntersect);
     //		if (dist)
                 listPoints2 << dist;
         }
@@ -598,10 +615,10 @@ bool Facet::intersect(const Facet *f) const
 	bd = Line2::Through(b,d);
     e = d - b;
     numerateur = e;
-    denom = linedir;
+    denom = g;
     if (!denom[0] || !denom[1])
     {
-        numerateur = linedir;
+        numerateur = g;
         denom = e;
     }
     if ((!denom[0] || !denom[1]) || (numerateur[0]/denom[0] != numerateur[1]/denom[1]))
@@ -609,7 +626,7 @@ bool Facet::intersect(const Facet *f) const
         pIntersect = ac.intersection(bd);
         if ((pIntersect - b).norm() + (pIntersect-d).norm()<= (d-b).norm())
         {
-            auto dist = linedir.dot(pIntersect-linepoint);//ac.signedDistance(pIntersect);
+            auto dist = ac.signedDistance(pIntersect);
     //		if (dist)
                 listPoints2 << dist;
         }

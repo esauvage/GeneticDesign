@@ -68,9 +68,9 @@ void TestFacet::surface()
 
 void TestFacet::coordLocale()
 {
-	auto x0 = rand()/(double)RAND_MAX;
-	auto y0 = rand()/(double)RAND_MAX;
-	auto z0 = rand()/(double)RAND_MAX;
+    auto x0 = rand()/(double)RAND_MAX;
+    auto y0 = rand()/(double)RAND_MAX;
+    auto z0 = rand()/(double)RAND_MAX;
 	QVector3D p[3] = {QVector3D(x0, y0, z0), QVector3D(x0+1, y0, z0), QVector3D(x0, 1+y0, z0)};
 	Facet f(&p[0], &p[1], &p[2]);
 	auto x = rand()/(double)RAND_MAX;
@@ -80,6 +80,13 @@ void TestFacet::coordLocale()
 	QVERIFY(r.x() < 0.0001);
 	QVERIFY(r.y() < 0.0001);
 	QVERIFY(r.z() < 0.0001);
+    QVector3D p1[3] = {QVector3D(x0, y0, z0), QVector3D(x0, y0+1, z0), QVector3D(x0, y0, z0+1)};
+    Facet f1(&p1[0], &p1[1], &p1[2]);
+    r = f1.coordLocales(QVector3D(x, y, z));
+    r = r - QVector3D(y-y0, z-z0, x-x0);
+    QVERIFY(r.x() < 0.0001);
+    QVERIFY(r.y() < 0.0001);
+    QVERIFY(r.z() < 0.0001);
 }
 
 void TestFacet::coteUnique()
