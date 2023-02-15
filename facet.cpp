@@ -296,10 +296,10 @@ bool Facet::operator==(const Facet &f) const
 {
 	if (f.vertices().size() != _vertices.size())
 		return false;
-	for (auto &v1 : _vertices)
+	for (const auto &v1 : _vertices)
 	{
 		bool found{false};
-		for (auto &v2 : f.vertices())
+		for (const auto &v2 : f.vertices())
 		{
 			if (v2 == v1)
 				found = true;

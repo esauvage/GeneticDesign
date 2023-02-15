@@ -1,6 +1,9 @@
 #include "volume.h"
+#include <Eigen/Geometry>
 
-#include <QGenericMatrix>
+using Line2 = Eigen::Hyperplane<float,2>;
+using Vec3  = Eigen::Vector3f;
+using Mat3 = Eigen::Matrix3f;
 
 Volume::Volume(Facet *a, Facet *b, Facet *c, Facet *d)
 {
@@ -46,7 +49,10 @@ double Volume::volume() const
 
 bool Volume::isIncluding(const QVector3D &p) const
 {
-    QVector3D *P0 = _facets[0]->vertices()[0];
+	Vec3 p0(_facets[0]->vertices().at(0)->x(), _facets[0]->vertices().at(0)->y(), _facets[0]->vertices().at(0)->z());
+	Vec3 p1(_facets[0]->vertices().at(1)->x(), _facets[0]->vertices().at(1)->y(), _facets[0]->vertices().at(1)->z());
+	Vec3 p2(_facets[0]->vertices().at(2)->x(), _facets[0]->vertices().at(2)->y(), _facets[0]->vertices().at(2)->z());
+	QVector3D *P0 = _facets[0]->vertices()[0];
     QVector3D *P1 = _facets[0]->vertices()[1];
     QVector3D *P2 = _facets[0]->vertices()[2];
     QVector3D *P3 = nullptr;
@@ -60,13 +66,26 @@ bool Volume::isIncluding(const QVector3D &p) const
     }
     if (!P3)
         return false;
+	Vec3 p3(P3->x(), P3->y(), P3->z());
+	Vec3 pp(p.x(), p.y(), p.z());
+	p1 -= p0;
+	p2 -= p0;
+	p3 -= p0;
+	pp -= p0;
+	Mat3 A;
+	A.col(0) << p1;
+	A.col(1) << p2;
+	A.col(2) << p3;
+	Vec3 u = A.colPivHouseholderQr().solve(pp);
+	double u0 = 1 - u[0] - u[1] - u[2];
+	return !(u[0] < 0. || u[1] < 0. || u[2] < 0. || u0 < 0.);
 //  u0 = 1−u1−u2−u3;
 //  u1(P1−P0)+u2(P2−P0)+u3(P3−P0)=(P−P0)
     QVector3D PP0 = p - (*P0);
     QVector3D P1P0 = (*P1) - (*P0);
     QVector3D P2P0 = (*P2) - (*P0);
     QVector3D P3P0 = (*P3) - (*P0);
-    double u1, u2, u3, u0;
+	double u1, u2, u3;
 //    u1 * P1P0.x() + u2 * P2P0.x() + u3 * P3P0.x() = PP0.x();
 //    u1 * P1P0.y() + u2 * P2P0.y() + u3 * P3P0.y() = PP0.y();
 //    u1 * P1P0.z() + u2 * P2P0.z() + u3 * P3P0.z() = PP0.z();
@@ -175,13 +194,13 @@ bool Volume::isIntersecting(Volume *v)
         pointsV[i] -= pointsY[0];
         pointsY[i] -= pointsY[0];
     }
-    QMatrix3x3 m;
-    for (int i = 0; i < 3; ++i)
-    {
-        for (int j = 0; j < 3; ++j)
-        {
-            m(i, j) = pointsY[i+1][j];
-        }
-    }
+//    QMatrix3x3 m;
+//    for (int i = 0; i < 3; ++i)
+//    {
+//        for (int j = 0; j < 3; ++j)
+//        {
+//            m(i, j) = pointsY[i+1][j];
+//        }
+//    }
     return false;
 }

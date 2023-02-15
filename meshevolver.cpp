@@ -208,11 +208,24 @@ void MeshEvolver::addFacet(Mesh *m)
         {
             f2 = new Facet(v0, v2, v3);
         } catch (const std::runtime_error& e) {
-            fCoupe = true;
-            delete f2;
-            continue;
-        }
-        try
+			fCoupe = true;
+			delete f2;
+			continue;
+		}
+		for (auto f : m->facets())
+		{
+			if (*f == *f2)
+			{
+				fCoupe = true;
+				delete f2;
+				break;
+			}
+		}
+		if (fCoupe)
+		{
+			continue;
+		}
+		try
         {
             f3 = new Facet(v1, v2, v3);
         } catch (const std::runtime_error& e) {
@@ -221,7 +234,21 @@ void MeshEvolver::addFacet(Mesh *m)
             delete f3;
             continue;
         }
-        V = new Volume(f0, f1, f2, f3);
+		for (auto f : m->facets())
+		{
+			if (*f == *f3)
+			{
+				fCoupe = true;
+				delete f2;
+				delete f3;
+				break;
+			}
+		}
+		if (fCoupe)
+		{
+			continue;
+		}
+		V = new Volume(f0, f1, f2, f3);
 		//Là il faut vérifier qu'aucun des points n'est dans ce volume...
 		for (auto v : m->vertices())
 		{
