@@ -26,22 +26,30 @@ MainWndGenDesign::MainWndGenDesign(QWidget *parent)
     for (auto i = 0; i < _population.size(); ++i) {
         _population.values()[i]->toFile(QString("test%1.stl").arg(i));
     }
-    auto nbGenerations = 1;
+	auto nbGenerations = 100;
     for (int k = 0; k < nbGenerations; k++)
     {
 		QMultiMap <double, Mesh *> _newPop;
         for (auto i = 0; i < _population.size(); ++i)
         {
-            auto j = _population.keys().at(i%10);
+			auto j = _population.keys().at(i%20);
 //            auto l = rand()%_population.values(j).size();
 			Mesh * m = new Mesh(*_population.values(j).at(rand()%_population.values(j).size()));
-			if (i >= 0.1*_population.size())
+			if (i >= 0.2*_population.size())
             {
                 MeshEvolver::evolve(m);
             }
 			double l = m->longueurMax();
 			l = l>1 ? l : 1/l;
-			_newPop.insert(m->surface()/m->volume() * l, m);
+			auto cout = m->surface()/m->volume() * l;
+			if (cout < 0)
+			{
+				i--;
+			}
+			else
+			{
+				_newPop.insert(cout, m);
+			}
         }
         _population = _newPop;
         for (auto i = 0; i < _population.size(); ++i) {

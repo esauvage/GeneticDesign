@@ -52,7 +52,7 @@ void Mesh::toFile(QString filename)
     if (fichier.open(QFile::WriteOnly | QFile::Truncate)) {
         QTextStream sortie(&fichier);
         sortie << "solid " << _nom << Qt::endl;
-        for (auto facet : _facets)
+		for (auto facet : facettesExternes())
         {
 			sortie << *facet;
         }
@@ -74,22 +74,6 @@ double Mesh::surface() const
 	double s = 0;
 	for (auto &f : facettesExternes())
 	{
-		auto nbVolumes = 0;
-//		auto facetteNoyee = false;
-		for (auto & v : _volumes)
-		{
-			if (v->facets().contains(f))
-			{
-				nbVolumes ++;
-				if (nbVolumes > 1)
-				{
-//					facetteNoyee = true;
-					break;
-				}
-			}
-		}
-		if (nbVolumes != 1)
-			continue;
 		s += f->surface();
 	}
 	return s;

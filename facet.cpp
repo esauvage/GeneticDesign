@@ -332,7 +332,7 @@ double Facet::surface() const
 {
 	auto e1 = *_vertices[1] - *_vertices[0];
 	auto e2 = *_vertices[2] - *_vertices[0];
-	return e1.crossProduct(e1, e2).length()/2.;
+	return fabs(e1.crossProduct(e1, e2).length())/2.;
 }
 
 void Facet::setVertice(int i, QVector3D *v)
