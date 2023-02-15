@@ -10,7 +10,6 @@ MeshEvolver::MeshEvolver()
 
 void MeshEvolver::evolve(Mesh *m)
 {
-//    srand(time(NULL));
 	for (int i = 0; i < m->vertices().size()*0.2; i += 1)
 	{
 		if (rand()%2)
@@ -117,7 +116,8 @@ void MeshEvolver::addFacet(Mesh *m)
 							f1Vertice.removeAll(f1->vertices().indexOf(v1));
 							auto v3 = f->vertices().at(fVertice.at(0));
 							auto v4 = f1->vertices().at(f1Vertice.at(0));
-							for (const auto & f2: m->facets())
+                            bool isInVolume = false;
+                            for (const auto & f2: m->facets())
 							{
 								if (f==f2|| f1==f2)
 								{
@@ -125,7 +125,7 @@ void MeshEvolver::addFacet(Mesh *m)
 								}
 								if (f2->vertices().contains(v)&&f2->vertices().contains(v3)&&f2->vertices().contains(v4))
 								{
-									bool isInVolume = false;
+                                    isInVolume = false;
 									//On a trouvé 3 facettes reliées
 									//Espérons qu'on ne trouve pas de volume qui les contienne
 									for (const auto &vol : m->volumes())
@@ -142,7 +142,8 @@ void MeshEvolver::addFacet(Mesh *m)
 									}
 								}
 							}
-							bool isInVolume = false;
+                            if (isInVolume)
+                                break;
 							for (const auto &vol : m->volumes())
 							{
 								if (vol->facets().contains(f) && vol->facets().contains(f1))
@@ -203,13 +204,28 @@ void MeshEvolver::addFacet(Mesh *m)
 		i2.removeAll(f1->vertices().indexOf(v0));
 		i2.removeAll(f1->vertices().indexOf(v1));
 		auto v3= f1->vertices().at(i2[0]);
-		f2 = new Facet(v0, v2, v3);
-		f3 = new Facet(v1, v2, v3);
-		V = new Volume(f0, f1, f2, f3);
+        try
+        {
+            f2 = new Facet(v0, v2, v3);
+        } catch (const std::runtime_error& e) {
+            fCoupe = true;
+            delete f2;
+            continue;
+        }
+        try
+        {
+            f3 = new Facet(v1, v2, v3);
+        } catch (const std::runtime_error& e) {
+            fCoupe = true;
+            delete f2;
+            delete f3;
+            continue;
+        }
+        V = new Volume(f0, f1, f2, f3);
 		//Là il faut vérifier qu'aucun des points n'est dans ce volume...
 		for (auto v : m->vertices())
 		{
-			if (v == v0 | v == v1 | v == v2 | v == v3)
+            if (v == v0 || v == v1 || v == v2 || v == v3)
 			{
 				continue;
 			}

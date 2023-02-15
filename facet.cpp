@@ -8,6 +8,10 @@ using Vec2  = Eigen::Vector2f;
 
 Facet::Facet(QVector3D *a, QVector3D *b, QVector3D *c)
 {
+    if (!a || !b || !c)
+        throw std::runtime_error("At least one point isn't defined");
+    if (a == b || a == c || b == c)
+        throw std::runtime_error("At least 2 points are the same");
     _vertices << a << b << c;
 }
 
@@ -42,11 +46,13 @@ double Facet::distanceTo(QVector3D point) const
 	auto ubc = diff.dotProduct(point - *(_vertices[1]), edge2)/edge2.lengthSquared();
 
     if (uab > 1 && ubc < 0)
+    {
         return (point - *(_vertices[1])).length();
-
+    }
     if (ubc > 1 && uca < 0)
+    {
         return (point - *(_vertices[2])).length();
-
+    }
 	if (ubc <= 1 && ubc >= 0)
 	{
 		auto aOnBC = diff.dotProduct(*(_vertices[0]) - *(_vertices[1]), edge2)/edge2.lengthSquared()* edge2 + *_vertices[1];
@@ -288,7 +294,6 @@ double Facet::distanceTo(QVector3D point) const
 
 bool Facet::operator==(const Facet &f) const
 {
-	return false;
 	if (f.vertices().size() != _vertices.size())
 		return false;
 	for (auto &v1 : _vertices)
@@ -482,8 +487,6 @@ bool Facet::intersect(const Facet *f) const
         return false;
     }
 	//Est-ce que les triangles se croisent sur cette ligne ?
-	using Line2 = Eigen::Hyperplane<float,2>;
-	using Vec2  = Eigen::Vector2f;
 	QList<double> listPoints;
     auto fLineA = f->coordLocales(line.first);
     auto fLineC = f->coordLocales(line.second);
@@ -509,9 +512,8 @@ bool Facet::intersect(const Facet *f) const
         pIntersect = ac.intersection(bd);
         if ((pIntersect - b).norm() + (pIntersect-d).norm()<= (d-b).norm())
         {
-            auto dist = ac.signedDistance(pIntersect);
-    //		if (dist)
-                listPoints << dist;
+            const auto dist = ac.signedDistance(pIntersect);
+            listPoints << dist;
         }
     }
 	b = Vec2(0, 0);
@@ -531,9 +533,8 @@ bool Facet::intersect(const Facet *f) const
         pIntersect = ac.intersection(bd);
         if ((pIntersect - b).norm() + (pIntersect-d).norm()<= (d-b).norm())
         {
-            auto dist = ac.signedDistance(pIntersect);
-    //		if (dist)
-                listPoints << dist;
+            const auto dist = ac.signedDistance(pIntersect);
+            listPoints << dist;
         }
     }
     b = Vec2(1, 0);
@@ -551,9 +552,8 @@ bool Facet::intersect(const Facet *f) const
         pIntersect = ac.intersection(bd);
         if ((pIntersect - b).norm() + (pIntersect-d).norm()<= (d-b).norm())
         {
-            auto dist = ac.signedDistance(pIntersect);
-    //		if (dist)
-                listPoints << dist;
+            const auto dist = ac.signedDistance(pIntersect);
+            listPoints << dist;
         }
     }
 	if (listPoints.isEmpty())
@@ -584,9 +584,8 @@ bool Facet::intersect(const Facet *f) const
         pIntersect = ac.intersection(bd);
         if ((pIntersect - b).norm() + (pIntersect-d).norm()<= (d-b).norm())
         {
-            auto dist = ac.signedDistance(pIntersect);
-    //		if (dist)
-                listPoints2 << dist;
+            const auto dist = ac.signedDistance(pIntersect);
+            listPoints2 << dist;
         }
     }
 	b = Vec2(0, 0);
@@ -606,9 +605,8 @@ bool Facet::intersect(const Facet *f) const
         pIntersect = ac.intersection(bd);
         if ((pIntersect - b).norm() + (pIntersect-d).norm()<= (d-b).norm())
         {
-            auto dist = ac.signedDistance(pIntersect);
-    //		if (dist)
-                listPoints2 << dist;
+            const auto dist = ac.signedDistance(pIntersect);
+            listPoints2 << dist;
         }
     }
 	b = Vec2(1, 0);
@@ -626,9 +624,8 @@ bool Facet::intersect(const Facet *f) const
         pIntersect = ac.intersection(bd);
         if ((pIntersect - b).norm() + (pIntersect-d).norm()<= (d-b).norm())
         {
-            auto dist = ac.signedDistance(pIntersect);
-    //		if (dist)
-                listPoints2 << dist;
+            const auto dist = ac.signedDistance(pIntersect);
+            listPoints2 << dist;
         }
     }
 	if (listPoints2.isEmpty())

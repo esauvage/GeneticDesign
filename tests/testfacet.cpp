@@ -129,8 +129,17 @@ void TestFacet::intersectFacet()
 	QVector3D p3[2] = {QVector3D(1, 0, 1), QVector3D(0, 1, 1)};
 	Facet f3(&p3[0], &p[0], &p3[1]);
 	QVERIFY(!f.intersect(&f3));
-	QVERIFY(!f3.intersect(&f));
+    QVERIFY(!f3.intersect(&f));
 }
 
-QTEST_MAIN(TestFacet)
+void TestFacet::equality()
+{
+    QVector3D p[3] = {QVector3D(0, 0, 0), QVector3D(1, 0, 0), QVector3D(0, 1, 0)};
+    Facet f(&p[0], &p[1], &p[2]);
+    QVERIFY(f == Facet(&p[0], &p[1], &p[2]));
+    QVERIFY(f == Facet(&p[0], &p[2], &p[1]));
+    QVERIFY(f == Facet(&p[1], &p[2], &p[0]));
+    QVERIFY(f == Facet(&p[0], &p[2], &p[1]));
+}
+
 #include "moc_testfacet.cpp"

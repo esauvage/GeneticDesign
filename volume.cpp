@@ -4,6 +4,14 @@
 
 Volume::Volume(Facet *a, Facet *b, Facet *c, Facet *d)
 {
+    if (!a || !b || !c || !d)
+    {
+        throw std::runtime_error("at least one Facet is a nullptr");
+    }
+    if (a == b || a == c || a == d || b == c || b == d || c == d)
+    {
+        throw std::runtime_error("at least 2 facets are duplicated");
+    }
 	_facets << a << b << c << d;
 }
 
@@ -23,7 +31,10 @@ double Volume::volume() const
 		}
 	}
 	if (!d)
+    {
+        throw std::out_of_range("couldn't find a 4th point in the volume.");
 		return -1;
+    }
 	QVector3D e = *b - *a;
 	QVector3D f = *c - *a;
 	e = e.crossProduct(e, f);

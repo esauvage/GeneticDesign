@@ -11,9 +11,11 @@ INCLUDEPATH += ../eigen/eigen-3.4.0\
 SOURCES +=  tst_testvolume.cpp \
     ../facet.cpp \
     ../volume.cpp \
+    main.cpp \
     testfacet.cpp
 
 HEADERS += \
     ../facet.h \
     ../volume.h \
+    AutoTest.h \
     testfacet.h

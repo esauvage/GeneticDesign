@@ -1,7 +1,7 @@
 #ifndef TESTFACET_H
 #define TESTFACET_H
 
-#include <QtTest/QtTest>
+#include "AutoTest.h"
 
 class TestFacet : public QObject
 {
@@ -16,6 +16,9 @@ private slots:
 	void coordLocale();
 	void coteUnique();
 	void intersectFacet();
+    void equality();
 };
+
+DECLARE_TEST(TestFacet)
 
 #endif // TESTFACET_H
