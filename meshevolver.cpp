@@ -12,7 +12,7 @@ void MeshEvolver::evolve(Mesh *m)
 {
 	for (int i = 0; i < m->vertices().size()*0.2; i += 1)
 	{
-		if (rand()%2)
+		if (!(rand()%4))
 		{
 			addFacet(m);
 			continue;
@@ -25,6 +25,8 @@ void MeshEvolver::evolve(Mesh *m)
 		int k = 0;
 		do {
 			k++;
+			if (k>100)
+				break;
 			fMemeCote = true;
 			fFacetteCroisees = false;
             do{
@@ -33,9 +35,9 @@ void MeshEvolver::evolve(Mesh *m)
 				j = rand()%m->vertices().size();
 				ref = m->vertices()[j];
 				p = new QVector3D(*ref);
-                *p+= QVector3D(rand()*0.02/(double)RAND_MAX - 0.01,
-                            rand()*0.02/(double)RAND_MAX - 0.01,
-                            rand()*0.02/(double)RAND_MAX - 0.01);
+				*p+= QVector3D(rand()*0.04/(double)RAND_MAX - 0.02,
+							rand()*0.04/(double)RAND_MAX - 0.02,
+							rand()*0.04/(double)RAND_MAX - 0.02);
             }while (m->isIncluding(*p));
 			for (auto & f : m->facets())
 			{
@@ -138,7 +140,7 @@ void MeshEvolver::addFacet(Mesh *m)
 									}
 									if (!isInVolume)
 									{
-										qDebug() << "Manque une face pour faire un volume !";
+//										qDebug() << "Manque une face pour faire un volume !";
 									}
 								}
 							}
@@ -174,6 +176,7 @@ void MeshEvolver::addFacet(Mesh *m)
 		auto i = rand()%bifaces.size();
 		Facet * f0 = bifaces[i].first;
 		Facet * f1 = bifaces[i].second;
+		bifaces.removeAt(i);
 		QVector3D * v0 = nullptr;
 		QVector3D * v1 = nullptr;
 		for (const auto &v : f0->vertices())
@@ -214,7 +217,7 @@ void MeshEvolver::addFacet(Mesh *m)
 		}
 		for (auto f : m->facets())
 		{
-			if (*f == *f2)
+			if (*f == *f2 || f2->intersect(f))
 			{
 				fCoupe = true;
 				delete f2;
@@ -236,7 +239,7 @@ void MeshEvolver::addFacet(Mesh *m)
         }
 		for (auto f : m->facets())
 		{
-			if (*f == *f3)
+			if (*f == *f3 || f3->intersect(f))
 			{
 				fCoupe = true;
 				delete f2;
@@ -260,13 +263,16 @@ void MeshEvolver::addFacet(Mesh *m)
 			{
 				fCoupe = true;
 				delete V;
+				V = nullptr;
 				delete f2;
 				delete f3;
 				break;
 			}
 		}
-	}while (fCoupe);
+	}while (fCoupe && bifaces.size());
 	//Et puis traiter le cas du Triface.
+	if (!V)
+		return;
 	m->addVolume(*V);
 	delete V;
 }

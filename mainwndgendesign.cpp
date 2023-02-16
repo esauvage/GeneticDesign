@@ -3,6 +3,7 @@
 
 #include "meshgenerator.h"
 #include "meshevolver.h"
+#include <iostream>
 
 MainWndGenDesign::MainWndGenDesign(QWidget *parent)
     : QMainWindow(parent)
@@ -19,10 +20,11 @@ MainWndGenDesign::MainWndGenDesign(QWidget *parent)
     for (auto i = 0; i < _population.size(); ++i) {
         _population.values()[i]->toFile(QString("test%1.stl").arg(i));
     }
-	auto nbGenerations = 100;
+	auto nbGenerations = 500;
     for (int k = 0; k < nbGenerations; k++)
     {
 		QMultiMap <double, Mesh *> _newPop;
+		std::cout << "Génération " << k << " Meilleure : " << _population.keys().first() << std::endl;
         for (auto i = 0; i < _population.size(); ++i)
         {
 			auto j = _population.keys().at(i%20);
