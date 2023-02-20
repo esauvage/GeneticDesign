@@ -107,7 +107,9 @@ void MeshEvolver::addFacet(Mesh *m)
 						{
 							continue;
 						}
-						if (f1->vertices().contains(v)&&f1->vertices().contains(v1))
+						auto common = f1->commonEdge(f);
+						if ((common.second == v1 && common.first == v) || (common.second == v && common.first == v1))
+//							if (f1->vertices().contains(v)&&f1->vertices().contains(v1))
 						{
 						// on a trouvé une 2ème facette
 							QList<int> fVertice {0, 1, 2};
@@ -144,8 +146,7 @@ void MeshEvolver::addFacet(Mesh *m)
 									}
 								}
 							}
-                            if (isInVolume)
-                                break;
+							isInVolume = false;
 							for (const auto &vol : m->volumes())
 							{
 								if (vol->facets().contains(f) && vol->facets().contains(f1))
@@ -177,28 +178,11 @@ void MeshEvolver::addFacet(Mesh *m)
 		Facet * f0 = bifaces[i].first;
 		Facet * f1 = bifaces[i].second;
 		bifaces.removeAt(i);
-		QVector3D * v0 = nullptr;
-		QVector3D * v1 = nullptr;
-		for (const auto &v : f0->vertices())
-		{
-			if (f1->vertices().contains(v))
-			{
-				v0 = v;
-				break;
-			}
-		}
-		for (const auto &v : f0->vertices())
-		{
-			if (v == v0)
-			{
-				continue;
-			}
-			if (f1->vertices().contains(v))
-			{
-				v1 = v;
-				break;
-			}
-		}
+		if (*f0 == *f1)
+			continue;
+		QPair<QVector3D *, QVector3D *>commonEdge = f0->commonEdge(f1);
+		QVector3D * v0 = commonEdge.first;
+		QVector3D * v1 = commonEdge.second;
 		QList<int> index {0, 1, 2};
 		index.removeAll(f0->vertices().indexOf(v0));
 		index.removeAll(f0->vertices().indexOf(v1));
@@ -217,6 +201,18 @@ void MeshEvolver::addFacet(Mesh *m)
 		}
 		for (auto f : m->facets())
 		{
+			if (*f == *f0 || f0->intersect(f))
+			{
+				fCoupe = true;
+				delete f2;
+				break;
+			}
+			if (*f == *f1 || f1->intersect(f))
+			{
+				fCoupe = true;
+				delete f2;
+				break;
+			}
 			if (*f == *f2 || f2->intersect(f))
 			{
 				fCoupe = true;

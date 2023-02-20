@@ -411,6 +411,11 @@ QPair<QVector3D, QVector3D> Facet::commonLine(const Facet *f) const
     auto lineDir = n.crossProduct(n, n1);
     if (lineDir.isNull())
         return r;
+	if (lineDir.dotProduct(lineDir, QVector3D(1, 1, 1)) < 0)
+	{
+		lineDir = -lineDir;
+	}
+	lineDir.normalize();
     //On calcule la droite d'intersection des plans des triangles
     QVector3D origin(0, 0, 0);
     auto p = origin.distanceToPlane(*(_vertices[0]), n);
@@ -441,7 +446,23 @@ QPair<QVector3D, QVector3D> Facet::commonLine(const Facet *f) const
     }
     r.first = QVector3D(x, y, z);
     r.second = r.first+lineDir;
-    return r;
+	return r;
+}
+
+QPair<QVector3D *, QVector3D *> Facet::commonEdge(const Facet *f) const
+{
+	QPair<QVector3D *, QVector3D *>r{nullptr, nullptr};
+	for (const auto &v : _vertices)
+	{
+		if (f->vertices().contains(v))
+		{
+			if (!r.first)
+				r.first = v;
+			else
+				r.second = v;
+		}
+	}
+	return r;
 }
 
 bool Facet::intersect(const QVector3D *a, const QVector3D *b) const
@@ -516,7 +537,6 @@ bool Facet::intersect(const Facet *f) const
             listPoints << dist;
         }
     }
-	b = Vec2(0, 0);
 	d = Vec2(0, 1);
 
 	bd = Line2::Through(b,d);
@@ -534,7 +554,8 @@ bool Facet::intersect(const Facet *f) const
         if ((pIntersect - b).norm() + (pIntersect-d).norm()<= (d-b).norm())
         {
             const auto dist = ac.signedDistance(pIntersect);
-            listPoints << dist;
+			if (!listPoints.contains(dist))
+				listPoints << dist;
         }
     }
     b = Vec2(1, 0);
@@ -553,10 +574,11 @@ bool Facet::intersect(const Facet *f) const
         if ((pIntersect - b).norm() + (pIntersect-d).norm()<= (d-b).norm())
         {
             const auto dist = ac.signedDistance(pIntersect);
-            listPoints << dist;
-        }
+			if (!listPoints.contains(dist))
+				listPoints << dist;
+		}
     }
-	if (listPoints.isEmpty())
+	if (listPoints.size() < 2)
 	{
 		return false;
 	}
@@ -588,7 +610,6 @@ bool Facet::intersect(const Facet *f) const
             listPoints2 << dist;
         }
     }
-	b = Vec2(0, 0);
 	d = Vec2(0, 1);
 
 	bd = Line2::Through(b,d);
@@ -606,8 +627,9 @@ bool Facet::intersect(const Facet *f) const
         if ((pIntersect - b).norm() + (pIntersect-d).norm()<= (d-b).norm())
         {
             const auto dist = ac.signedDistance(pIntersect);
-            listPoints2 << dist;
-        }
+			if (!listPoints2.contains(dist))
+				listPoints2 << dist;
+		}
     }
 	b = Vec2(1, 0);
 	bd = Line2::Through(b,d);
@@ -625,10 +647,11 @@ bool Facet::intersect(const Facet *f) const
         if ((pIntersect - b).norm() + (pIntersect-d).norm()<= (d-b).norm())
         {
             const auto dist = ac.signedDistance(pIntersect);
-            listPoints2 << dist;
-        }
+			if (!listPoints2.contains(dist))
+				listPoints2 << dist;
+		}
     }
-	if (listPoints2.isEmpty())
+	if (listPoints2.size()<2)
 	{
 		return false;
 	}

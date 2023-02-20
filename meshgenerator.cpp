@@ -1,5 +1,6 @@
 #include "meshgenerator.h"
 #include <Eigen/Geometry>
+#include <iostream>
 
 MeshGenerator::MeshGenerator()
 {
@@ -59,6 +60,16 @@ Mesh *MeshGenerator::genere()
 		newFacets << new Facet(f->vertices()[1], f->vertices()[2], point);
 		newFacets << new Facet(f->vertices()[2], f->vertices()[0], point);
 		bool facesSecantes = false;
+//		for (const auto & fRef : m->facets())
+//		{
+//			if (fRef->intersect(f) || fRef->intersect(newFacets[0]) || fRef->intersect(newFacets[1]) || fRef->intersect(newFacets[2]))
+//			{
+//				qDeleteAll(newFacets);
+//				facesSecantes = true;
+//				newFacets.clear();
+//				break;
+//			}
+//		}
 		for (auto & fRef : m->facets())
 		{
 			if (fRef == f)
@@ -72,12 +83,25 @@ Mesh *MeshGenerator::genere()
 					facesSecantes = true;
 					break;
 				}
+				if (fRef->intersect(f1))
+				{
+					fRef->intersect(f1);
+					f1->intersect(fRef);
+					break;//intersect() n'est pas symétrique
+				}
+				if (fRef->intersect(f))
+				{
+					fRef->intersect(f);
+					f->intersect(fRef);
+					break;//Déjà mal contstruit.
+				}
 			}
 			if (facesSecantes) break;
 		}
 		if (facesSecantes)
 		{
 			qDeleteAll(newFacets);
+			newFacets.clear();
 			delete point;
 			point = nullptr;
 			i --;
@@ -90,8 +114,11 @@ Mesh *MeshGenerator::genere()
 		}
         nbFautesNear = 0;
         nbFautesCross = 0;
-        Volume v(f, newFacets[0], newFacets[1], newFacets[2]);
-		m->addVolume(v);
+		if (newFacets.size() == 3)
+		{
+			Volume v(f, newFacets[0], newFacets[1], newFacets[2]);
+			m->addVolume(v);
+		}
 	}
     return m;
 }
