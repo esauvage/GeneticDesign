@@ -59,22 +59,24 @@ void MeshEvolver::evolve(Mesh *m)
 			{
 				if (f->vertices().contains(ref))
 				{
-					auto f1 = new Facet(f->vertices()[0], f->vertices()[1], f->vertices()[2]);
-					f1->setVertice(f1->vertices().indexOf(ref), p);
+                    f->setVertice(f->vertices().indexOf(ref), p);
+//					auto f1 = new Facet(f->vertices()[0], f->vertices()[1], f->vertices()[2]);
+//					f1->setVertice(f1->vertices().indexOf(ref), p);
 					bool facesSecantes = false;
 					for (auto & fRef : m->facets())
 					{
 						if (fRef == f)
 							continue;
-						if (fRef->vertices().contains(ref))
-							continue;
-						if (f1->intersect(fRef))
+//						if (fRef->vertices().contains(ref))
+//							continue;
+                        if (f->intersect(fRef))
 						{
-							facesSecantes = true;
+                            f->setVertice(f->vertices().indexOf(p), ref);
+                            facesSecantes = true;
 							break;
 						}
 					}
-					delete f1;
+//					delete f1;
 					fFacetteCroisees |= facesSecantes;
 					if (fFacetteCroisees)
 						break;
@@ -201,13 +203,13 @@ void MeshEvolver::addFacet(Mesh *m)
 		}
 		for (auto f : m->facets())
 		{
-			if (*f == *f0 || f0->intersect(f))
+            if (f0->intersect(f))
 			{
 				fCoupe = true;
 				delete f2;
 				break;
 			}
-			if (*f == *f1 || f1->intersect(f))
+            if (f1->intersect(f))
 			{
 				fCoupe = true;
 				delete f2;

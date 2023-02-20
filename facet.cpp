@@ -508,7 +508,7 @@ bool Facet::intersect(const Facet *f) const
         return false;
     }
 	//Est-ce que les triangles se croisent sur cette ligne ?
-	QList<double> listPoints;
+    QList<float> listPoints;
     auto fLineA = f->coordLocales(line.first);
     auto fLineC = f->coordLocales(line.second);
     Vec2 a(fLineA.x(), fLineA.y());
@@ -584,7 +584,7 @@ bool Facet::intersect(const Facet *f) const
 	}
     fLineA = coordLocales(line.first);
     fLineC = coordLocales(line.second);
-	QList<double> listPoints2;
+    QList<float> listPoints2;
     a = Vec2(fLineA.x(), fLineA.y());
     c = Vec2(fLineC.x(), fLineC.y());
 	b = Vec2(0, 0);
@@ -656,7 +656,11 @@ bool Facet::intersect(const Facet *f) const
 		return false;
 	}
 	std::sort(listPoints.begin(), listPoints.end());
-	std::sort(listPoints2.begin(), listPoints2.end());
+    if (fabs(listPoints.first()-listPoints.last()) < 1e-6)
+        return false;
+    std::sort(listPoints2.begin(), listPoints2.end());
+    if (fabs(listPoints2.first()-listPoints2.last()) < 1e-6)
+        return false;
     if (listPoints.last() > listPoints2.first() && listPoints2.last() > listPoints.first())
 	{
 		return true;
